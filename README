@@ -1,20 +1,20 @@
 Net-eBay
 
-  This module allows users to communicate with eBay using perl and their
-  XML based eBay API. You can use it to list items for sale, bid, get
-  seller item list, search, get ebay time, or do anything else.
-  
-  Many details of this API can be found at http://developer.ebay.com. To
-  be able to use this module, you need to register there and obtain keys
-  and a authentication token using "tokentool".
-  
-  The job of its module is to encapsulate connectivity and
-  authentication, and communication with ebay. First, you need to
-  initialize your ebay connection by passing it credentials. After that,
-  you can send queries to eBay. A typical request is comprised of its
-  name, and a hash table of application parameters.
-  
-  Example of listing an item for sale:
+This module allows users to communicate with eBay using perl and their
+XML based eBay API. You can use it to list items for sale, bid, get
+seller item list, search, get ebay time, or do anything else.
+
+Many details of this API can be found at http://developer.ebay.com. To
+be able to use this module, you need to register there and obtain keys
+and a authentication token using "tokentool".
+
+The job of its module is to encapsulate connectivity and
+authentication, and communication with ebay. First, you need to
+initialize your ebay connection by passing it credentials. After that,
+you can send queries to eBay. A typical request is comprised of its
+name, and a hash table of application parameters.
+
+Example of listing an item for sale:
   
   use Net::eBay;
   use Data::Dumper;
@@ -54,7 +54,7 @@ Net-eBay
   
     print "Result: " . Dumper( $result ) . "\n";
   
-  Result of submitRequest is a perl hash obtained from the response XML using XML::Simple, something like this:
+Result of submitRequest is a perl hash obtained from the response XML using XML::Simple, something like this:
   
   Result: $VAR1 = {
             'Item' => {
@@ -93,13 +93,13 @@ Net-eBay
 
 THIS IS A NEW MODULE
 
-  This module is new and may have bugs (gasp). Please contact Igor
-  Chudov, ichudov AT algebra DOT com, maybe I could help you, or you
-  could help me.
+This module is new and may have bugs (gasp). Please contact Igor
+Chudov, ichudov AT algebra DOT com, maybe I could help you, or you
+could help me.
 
 INSTALLATION
 
-  To install this module, run the following commands:
+To install this module, run the following commands:
   
       perl Makefile.PL
       make
@@ -109,7 +109,7 @@ INSTALLATION
 
 COPYRIGHT AND LICENCE
 
-  Copyright (C) 2005 Igor Chudov
+Copyright (C) 2005 Igor Chudov
   
-  This program is free software; you can redistribute it and/or modify it
-  under the same terms as Perl itself.
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
