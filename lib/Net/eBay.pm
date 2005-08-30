@@ -9,6 +9,7 @@ use LWP::UserAgent;
 use HTTP::Request::Common;
 use HTTP::Status qw(status_message);
 use HTTP::Date qw(time2str str2time);
+use Carp qw( croak );
 
 use vars qw( $_ua );
 
@@ -18,22 +19,30 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 SYNOPSIS
 
 Quick summary of what the module does.
 
+Example of getting eBay official time:
+
+ use Net::eBay;
+ my $eBay   = new Net::eBay; # look up ebay.ini in $ENV{EBAY_INI_FILE}, "./ebay.ini", "~/.ebay.ini"
+ my $result = $eBay->submitRequest( "GeteBayOfficialTime", {} );
+ print "eBay Official Time = $result->{EBayTime}.\n";
+
 Example of listing an item for sale:
 
-use Net::eBay;
-use Data::Dumper;
+ use Net::eBay;
+ use Data::Dumper;
 
-my $ebay = new Net::eBay( {
+ # another way of creating Net::eBay object.
+ my $ebay = new Net::eBay( {
                               site_level => 'prod',
                               DeveloperKey => '...',
                               ApplicationKey => '...',
@@ -41,7 +50,7 @@ my $ebay = new Net::eBay( {
                               Token => '...',
                              } ); 
 
-my $result = $ebay->submitRequest( "AddItem",
+ my $result = $ebay->submitRequest( "AddItem",
                       {
                        DetailLevel => "0",
                        ErrorLevel => "1",
@@ -70,7 +79,7 @@ my $result = $ebay->submitRequest( "AddItem",
 
 Result of submitRequest is a perl hash obtained from the response XML using XML::Simple, something like this:
 
-Result: $VAR1 = {
+ Result: $VAR1 = {
           'Item' => {
                     'Id' => '4503546598',
                     'Fees' => {
@@ -103,8 +112,6 @@ Result: $VAR1 = {
           'EBayTime' => '2005-08-30 04:50:47'
         };
 
-
-
 =head1 EXPORT
 
 new -- creates eBay API. Requires supplying of credentials:
@@ -120,6 +127,37 @@ The site_level parameter is also mandatory and can be either 'prod' or
 money for listings, etc), and dev means to use eBay sandbox
 http://sandbox.ebay.com/.
 
+Parameters can be supplied in two ways:
+
+1) As a hash table
+
+2) As a filename (only argument). If filename and hash are missing, Net::eBay
+makes an effort to fine a ebay.ini file by looking for: $ENV{EBAY_INI_FILE}, ./ebay.ini,
+~/.ebay.ini . That's the default constructor.
+
+See SAMPLE.ebay.ini in this distribution.
+
+=head1 ebay.ini FILE
+
+ebay.ini is a file that lists ebay access keys and whether this is for
+accessing eBay production site or its developers' sandbox. Example of
+the file (see SAMPLE.ebay.ini):
+
+ # dev or prod
+ site_level=prod
+
+ # your developer key
+ DeveloperKey=KLJHAKLJHLKJHLKJH
+
+ # your application key
+ ApplicationKey=LJKGHKLJGKJHG
+
+ # your certificate key
+ CertificateKey=SUYTYWTKWTYIUYTWIUTY
+
+ # your token (a very BIG string)
+ Token=JKHGHJGJHGKJHGKJHGkluhsdihdsriuhfwe87yr8wehIEWH9O78YWERF90HF9UHJESIPHJFV94Y4089734Y
+
 
 =head1 FUNCTIONS
 
@@ -129,8 +167,43 @@ http://sandbox.ebay.com/.
 
 sub new {
   my ($type, $hash) = @_;
+
+  unless( $hash ) {
+    if( defined $ENV{EBAY_INI_FILE} && -f $ENV{EBAY_INI_FILE} ) {
+      $hash = $ENV{EBAY_INI_FILE};
+    } elsif( -f "$ENV{HOME}/.ebay.ini" ) {
+      $hash = "$ENV{HOME}/.ebay.ini";
+    } elsif( -f "ebay.ini" ) {
+      $hash = "ebay.ini";
+    }
+  }
+
+  unless( $hash ) {
+    warn "Error creating Net::eBay: no hash with keys and no ini file in: \$ENV{EBAY_INI_FILE}, ~/.ebay.ini, ./ebay.ini. eBay requires these keys. See perldoc Net::eBay on the keys file.\n";
+    return undef;
+  }
+
+  unless(ref $hash) {
+    # this is a filename
+    open( F, $hash ) || croak "Cannot open Net::eBay resource file $hash";
+    my $h = {};
+    while( my $l = <F> ) {
+      next if $l =~ /^\s*$/;
+      next if $l =~ /\s*\#/;
+      next unless $l =~ /^\s*(\w+)\s*\=\s*(.*)/;
+      $h->{$1} = $2;
+    }
+    close( F );
+    $hash = $h;
+  }
+  
   bless $hash, $type;
+
   $hash->{siteid} = 0 unless $hash->{siteid};
+
+  return undef unless verifyAndPrint( defined $hash->{site_level} && $hash->{site_level},
+                                      "site_level must be defined" );
+  
   if( $hash->{site_level} eq 'prod' ) {
     $hash->{url} = 'https://api.ebay.com/ws/api.dll';
   } elsif( $hash->{site_level} eq 'dev' ) {
@@ -194,6 +267,20 @@ sub submitRequest {
   return $result;
 }
 
+=head2 officialTime
+
+=cut
+
+sub officialTime {
+  my ($eBay) = @_;
+  my $result = $eBay->submitRequest( "GeteBayOfficialTime", {} );
+  if( $result ) {
+    return $result->{EBayTime};
+  } else {
+    print STDERR "Could not get official time.\n";
+    return undef;
+  }
+}
 
 =head1 AUTHOR
 
