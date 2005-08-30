@@ -19,11 +19,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 =head1 SYNOPSIS
 
@@ -43,7 +43,7 @@ Example of listing an item for sale:
 
  # another way of creating Net::eBay object.
  my $ebay = new Net::eBay( {
-                              site_level => 'prod',
+                              SiteLevel => 'prod',
                               DeveloperKey => '...',
                               ApplicationKey => '...',
                               CertificateKey => '...',
@@ -122,7 +122,7 @@ Get them by registering at http://developer.ebay.com and self
 certifying. Celf certifying is a trivial process of solemnly swearing
 that you are ready to use their API.
 
-The site_level parameter is also mandatory and can be either 'prod' or
+The SiteLevel parameter is also mandatory and can be either 'prod' or
 'dev'. prod means to use their production site (being charged real
 money for listings, etc), and dev means to use eBay sandbox
 http://sandbox.ebay.com/.
@@ -144,7 +144,7 @@ accessing eBay production site or its developers' sandbox. Example of
 the file (see SAMPLE.ebay.ini):
 
  # dev or prod
- site_level=prod
+ SiteLevel=prod
 
  # your developer key
  DeveloperKey=KLJHAKLJHLKJHLKJH
@@ -161,7 +161,7 @@ the file (see SAMPLE.ebay.ini):
 
 =head1 FUNCTIONS
 
-=head2 function1
+=head2 new
 
 =cut
 
@@ -201,15 +201,15 @@ sub new {
 
   $hash->{siteid} = 0 unless $hash->{siteid};
 
-  return undef unless verifyAndPrint( defined $hash->{site_level} && $hash->{site_level},
-                                      "site_level must be defined" );
+  return undef unless verifyAndPrint( defined $hash->{SiteLevel} && $hash->{SiteLevel},
+                                      "SiteLevel must be defined" );
   
-  if( $hash->{site_level} eq 'prod' ) {
+  if( $hash->{SiteLevel} eq 'prod' ) {
     $hash->{url} = 'https://api.ebay.com/ws/api.dll';
-  } elsif( $hash->{site_level} eq 'dev' ) {
+  } elsif( $hash->{SiteLevel} eq 'dev' ) {
     $hash->{url} = 'https://api.sandbox.ebay.com/ws/api.dll';
   } else {
-    return unless verifyAndPrint( 0, "Parameter site_level is not defined or is wrong: '$hash->{site_level}'" );
+    return unless verifyAndPrint( 0, "Parameter SiteLevel is not defined or is wrong: '$hash->{SiteLevel}'" );
   }
 
   $hash->{siteid} = 0 unless $hash->{siteid};
@@ -225,7 +225,7 @@ sub new {
 }
 
 
-=head2 function2
+=head2 submitRequest
 
 =cut
 

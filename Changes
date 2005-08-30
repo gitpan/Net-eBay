@@ -6,3 +6,4 @@ Revision history for Net-eBay
 0.03    Documentation cleanup
 0.04    Documentation cleanup
 0.05    Added a constructor from a .ini file name
+0.06    Cleaned docs, renamed site_level into SiteLevel everywhere
