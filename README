@@ -1,4 +1,4 @@
-Net-eBayAPI
+Net-eBay
 
 This module allows users to communicate with eBay using perl and their
 XML based eBay API. You can use it to list items for sale, bid, get
