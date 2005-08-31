@@ -19,24 +19,28 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 SYNOPSIS
 
 Quick summary of what the module does.
 
-Example of getting eBay official time:
+=head2 Getting Official Time
 
  use Net::eBay;
  my $eBay   = new Net::eBay; # look up ebay.ini in $ENV{EBAY_INI_FILE}, "./ebay.ini", "~/.ebay.ini"
  my $result = $eBay->submitRequest( "GeteBayOfficialTime", {} );
  print "eBay Official Time = $result->{EBayTime}.\n";
 
-Example of listing an item for sale:
+=head2 Automated bidding
+
+eBay does not allow bidding via eBay API.
+
+=head2 Listing Item for sale
 
  use Net::eBay;
  use Data::Dumper;
@@ -158,6 +162,7 @@ the file (see SAMPLE.ebay.ini):
  # your token (a very BIG string)
  Token=JKHGHJGJHGKJHGKJHGkluhsdihdsriuhfwe87yr8wehIEWH9O78YWERF90HF9UHJESIPHJFV94Y4089734Y
 
+=for html This module was seen <IMG SRC="http://www.algebra.com/cgi-bin/counter.mpl?key=Net__Ebay"> times.
 
 =head1 FUNCTIONS
 
