@@ -19,11 +19,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 SYNOPSIS
 
@@ -115,6 +115,9 @@ Result of submitRequest is a perl hash obtained from the response XML using XML:
                   },
           'EBayTime' => '2005-08-30 04:50:47'
         };
+
+If an error in parsing XML occurs, result will be simply the string
+that is the text representation of the answer.
 
 =head1 EXPORT
 
@@ -267,9 +270,17 @@ sub submitRequest {
   return undef unless $res;
 
   #print "Content: " . $res->content . "\n";
-  my $result = XMLin( $res->content );
-  #print "perl result=$result.\n";
-  return $result;
+  $@ = "";
+  my $result = undef;
+  eval {
+    $result = XMLin( $res->content );
+    #print "perl result=$result.\n";
+  };
+
+  return $result if $result;
+  
+  print STDERR "Error parsing XML ($@). \n";
+  return $res->content;
 }
 
 =head2 officialTime
