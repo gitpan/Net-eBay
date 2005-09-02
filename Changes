@@ -11,3 +11,4 @@ Revision history for Net-eBay
 0.08    General cleanup
 0.09    Better error handling, added a 'validate' script for validating a token
 0.10    Cleaned up ebay-validate-test-user.pl, it now warns if validating in production environment (wrong)
+0.11    Added a ebay-get-categories script
