@@ -20,11 +20,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =cut
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 =head1 SYNOPSIS
 
@@ -117,6 +117,9 @@ Result of submitRequest is a perl hash obtained from the response XML using XML:
           'EBayTime' => '2005-08-30 04:50:47'
         };
 
+See an alternative example of submitting an item using New Schema, in script
+ebay-add-item.pl.
+
 If an error in parsing XML occurs, result will be simply the string
 that is the text representation of the answer.
 
@@ -151,7 +154,7 @@ This module, by default, is using the "Legacy XML API" that is set to
 expire in the summer of 2006. That default will change as the legacy
 API actually expires.
 
-Defaults are set by calling setDefaults( { ... } )
+XML API Schema is set by calling setDefaults( { ... } )
 
 See its documentation below.
 
@@ -262,6 +265,7 @@ supersedes it. All other values are illegal.
 Example:
 
   $eBay->setDefaults( { API => 2 } ); # use new eBay API
+
 =cut
 
 sub setDefaults {
@@ -359,6 +363,7 @@ sub submitRequest {
 =head2 officialTime
 
 Returns eBay official time
+
 =cut
 
 sub officialTime {
