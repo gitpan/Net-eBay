@@ -8,7 +8,7 @@ WriteMakefile(
               VERSION_FROM        => 'lib/Net/eBay.pm',
               ABSTRACT            => 'XML based communication with eBay API',
               PL_FILES            => {},
-              EXE_FILES           => [ 'ebay-official-time.pl', 'ebay-validate-test-user.pl' ],
+              EXE_FILES           => [ 'ebay-official-time.pl', 'ebay-validate-test-user.pl', 'ebay-get-categories.pl' ],
               PREREQ_PM => {
                             'Test::More' => 0,
                            },
