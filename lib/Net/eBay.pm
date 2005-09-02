@@ -5,6 +5,7 @@ use strict;
 
 use XML::Simple;
 use XML::Dumper;
+use Data::Dumper;
 use LWP::UserAgent;
 use HTTP::Request::Common;
 use HTTP::Status qw(status_message);
@@ -19,15 +20,15 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.12
+Version 0.13
 
 =cut
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
+This module helps user to easily execute queries against eBay's XML API.
 
 =head2 Getting Official Time
 
@@ -144,6 +145,16 @@ makes an effort to fine a ebay.ini file by looking for: $ENV{EBAY_INI_FILE}, ./e
 
 See SAMPLE.ebay.ini in this distribution.
 
+=head1 Defaults and XML API Versions
+
+This module, by default, is using the "Legacy XML API" that is set to
+expire in the summer of 2006. That default will change as the legacy
+API actually expires.
+
+Defaults are set by calling setDefaults( { ... } )
+
+See its documentation below.
+
 =head1 ebay.ini FILE
 
 ebay.ini is a file that lists ebay access keys and whether this is for
@@ -209,6 +220,9 @@ sub new {
 
   $hash->{siteid} = 0 unless $hash->{siteid};
 
+  # We use eBay Legacy API (expires in summer of 2006) by default.
+  $hash->{defaults} = { API => 1 };
+  
   return undef unless verifyAndPrint( defined $hash->{SiteLevel} && $hash->{SiteLevel},
                                       "SiteLevel must be defined" );
   
@@ -233,7 +247,45 @@ sub new {
 }
 
 
+=head2 setDefaults
+
+Sets application defaults, most importantly the XML API version to be used.
+
+Takes a hash argument.
+
+The following defaults can be set:
+
+* API -- sets eBay API version. Only two values are supported: '1' means
+Legacy API set to expire in the summer of 2006, '2' means the API that
+supersedes it. All other values are illegal.
+
+Example:
+
+  $eBay->setDefaults( { API => 2 } ); # use new eBay API
+=cut
+
+sub setDefaults {
+  my ($this, $defaults) = @_;
+
+  my $api = $defaults->{API};
+  if( $api != 1 && $api != 2 ) {
+    croak "Incorrect value of API ($api) is supplied in the hash. Use API => 1 or API => 2.";
+  }
+
+  my $old = $this->{defaults}->{API};
+  $this->{defaults}->{API} = $api;
+  return $old;
+}
+
 =head2 submitRequest
+
+Sends a request to eBay. Takes a name of the API call and a hash of arguments.
+The arguments can be hashes of hashes and are properly translated into nested
+XML structures.
+
+Depending on the default API set by setDefaults (see above), XML
+produced will be compatible with the eBay API version selected by the
+user.
 
 =cut
 
@@ -246,25 +298,46 @@ sub submitRequest {
   $req->header( 'X-EBAY-API-DETAIL-LEVEL', '2' );
   $req->header( 'X-EBAY-API-CERT-NAME', $this->{CertificateKey} );
   $req->header( 'X-EBAY-API-APP-NAME', $this->{ApplicationKey} );
-  $req->header( 'X-EBAY-API-COMPATIBILITY-LEVEL', '349' );
-  $req->header( 'X-EBAY-API-CALL-NAME', $name );
   $req->header( 'Content-Type', 'text/xml' );
   $req->header( 'X-EBAY-API-SESSION-CERTIFICATE', $this->{SessionCertificate} ); 
 
+  my $xml = "";
+  if( $this->{defaults}->{API} == 1 ) {
+    $req->header( 'X-EBAY-API-COMPATIBILITY-LEVEL', '349' );
+    $req->header( 'X-EBAY-API-CALL-NAME', $name );
 
-
-  my $xml = "<?xml version='1.0' encoding='UTF-8'?>
+    $request->{Verb} = $name unless $request->{Verb};
+    
+    $xml = "<?xml version='1.0' encoding='UTF-8'?>
 <request>
     <RequestToken>" . $this->{Token} . "</RequestToken>\n";
 
-  $xml .= hash2xml( 2, $request );
-  
-  $xml .= "</request>\n\n";
+    $xml .= hash2xml( 2, $request );
+    
+    $xml .= "</request>\n\n";
+    
+  } elsif( $this->{defaults}->{API} == 2 ) {
+    $req->header( 'X-EBAY-API-COMPATIBILITY-LEVEL', '391' );
+    $req->header( 'X-EBAY-API-CALL_NAME', $name );
+
+    $xml = "
+<?xml version='1.0' encoding='utf-8'?>
+ <$name"."Request xmlns=\"urn:ebay:apis:eBLBaseComponents\">
+ <RequesterCredentials>
+   <eBayAuthToken>$this->{Token}</eBayAuthToken>
+ </RequesterCredentials>
+" . hash2xml( 2, $request ) . "
+</$name"."Request>
+";
+
+  } else {
+    croak "Strange, the default API '$this->{defaults}->{API}' is unrecognized. BUG.\n";
+  }
 
   $req->content( $xml );
   
   #print "XML:\n$xml\n";
-  #print "Request: " . $req->as_string;
+  print "Request: " . $req->as_string;
 
   my $res = $_ua->request($req);
   return undef unless $res;
@@ -285,13 +358,16 @@ sub submitRequest {
 
 =head2 officialTime
 
+Returns eBay official time
 =cut
 
 sub officialTime {
-  my ($eBay) = @_;
-  my $result = $eBay->submitRequest( "GeteBayOfficialTime", {} );
+  my ($this) = @_;
+  my $result = $this->submitRequest( "GeteBayOfficialTime", {} );
   if( $result ) {
-    return $result->{EBayTime};
+    return $result->{EBayTime} if( $this->{defaults}->{API} == 1 );
+    return $result->{Timestamp} if( $this->{defaults}->{API} == 2 );
+    croak "Strange, unknown API level '$this->{defaults}->{API}'. bug\n";
   } else {
     print STDERR "Could not get official time.\n";
     return undef;
