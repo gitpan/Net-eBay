@@ -16,3 +16,4 @@ Revision history for Net-eBay
 0.13    Support for new Schema added. $eBay->setDefaults( { API => 2 } )
         Added script ebay-add-item.pl, showing how to add items using NEW Schema.
 0.14    Documentation cleanup
+0.15    Added a user's ability to specify XML attributes for the New Schema

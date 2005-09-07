@@ -20,11 +20,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.14
+Version 0.15
 
 =cut
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 =head1 SYNOPSIS
 
@@ -221,6 +221,8 @@ sub new {
   
   bless $hash, $type;
 
+  $hash->{debug} = undef unless $hash->{debug};
+  
   $hash->{siteid} = 0 unless $hash->{siteid};
 
   # We use eBay Legacy API (expires in summer of 2006) by default.
@@ -278,6 +280,8 @@ sub setDefaults {
 
   my $old = $this->{defaults}->{API};
   $this->{defaults}->{API} = $api;
+
+  $this->{debug} = $defaults->{debug} if $defaults->{debug};
   return $old;
 }
 
@@ -286,6 +290,33 @@ sub setDefaults {
 Sends a request to eBay. Takes a name of the API call and a hash of arguments.
 The arguments can be hashes of hashes and are properly translated into nested
 XML structures.
+
+Example:
+
+  TopLevel => {
+                Item1 => 'hello',
+                Item2 => 'world'
+                Item3 => ['foo', 'bar']
+              }
+
+it would be translated to
+
+  <TopLevel>
+    <Item1>hello</Item1>
+    <Item2>world</Item2>
+    <Item3>foo</Item3>
+    <Item3>bar</Item3>
+  </TopLevel>
+
+If an argument has XML attributes and should be formatted like this:
+
+ <TestAttribute currencyID="USD" >abcd</TestAttribute>
+
+(note "currencyID")
+
+your argument should be
+
+ TestAttribute => { _attributes => { currencyID => 'USD' }, _value => 'abcd' ),
 
 Depending on the default API set by setDefaults (see above), XML
 produced will be compatible with the eBay API version selected by the
@@ -339,9 +370,11 @@ sub submitRequest {
   }
 
   $req->content( $xml );
-  
-  #print "XML:\n$xml\n";
-  print "Request: " . $req->as_string;
+
+  if( $this->{debug} ) {
+    print STDERR "XML:\n$xml\n";
+    print STDERR "Request: " . $req->as_string;
+  }
 
   my $res = $_ua->request($req);
   return undef unless $res;
@@ -409,7 +442,10 @@ sub verifyAndPrint {
 }
 
 sub hash2xml {
-  my ($depth, $request) = @_;
+  my ($depth, $request, $optionalKey) = @_;
+
+  my $r = ref $request;
+  
   unless( ref $request ) {
     my $data = $request;
     $data =~ s/\</\&lt\;/g;
@@ -417,13 +453,40 @@ sub hash2xml {
     return $data;
   }
 
-  my $xml = "\n";
-  my $d = " " x $depth;
-  foreach my $key (sort keys %$request) {
-    my $data = hash2xml( $depth+2, $request->{$key} );
-    $xml .= "$d  <$key>$data</$key>\n";
+  my $xml;
+  
+  if( $r =~ /HASH/ ) {
+    if( defined $request->{_value} && defined $request->{_attributes} ) {
+      $xml = "<$optionalKey ";
+      foreach my $a ( sort keys %{$request->{_attributes}} ) {
+        #print STDERR "a=$a.\n";
+        $xml .= "$a=\"$request->{_attributes}->{$a}\" ";
+      }
+      $xml .= ">";
+      $xml .= hash2xml( $depth+2, $request->{_value} );
+      $xml .= "</$optionalKey>";
+    } else {
+      $xml = "\n";
+      my $d = " " x $depth;
+      foreach my $key (sort keys %$request) {
+        my $r = $request->{$key};
+        if( (ref( $r ) =~ /HASH/)
+            && defined $r->{_value}
+            && defined $r->{_attributes} ) {
+          $xml .= "$d  " . hash2xml( $depth+2, $r, $key ) . "\n";
+        } else {
+          my $data = hash2xml( $depth+2, $request->{$key}, $key );
+          $xml .= "$d  <$key>$data</$key>\n";
+        }
+      }
+      $xml .= "$d";
+    }
+  } elsif( $r =~ /ARRAY/ ) {
+    foreach my $item ( @$request ) {
+      $xml .= hash2xml( $depth+2, { $optionalKey => $item }, $optionalKey );
+    }
   }
-  $xml .= "$d";
+  
   return $xml;
 }
 

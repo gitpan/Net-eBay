@@ -14,6 +14,9 @@ initialize your ebay connection by passing it credentials. After that,
 you can send queries to eBay. A typical request is comprised of its
 name, and a hash table of application parameters.
 
+It supports BOTH New and Legacy API (Legacy API will expire in summer
+2006).
+
 Example of listing an item for sale:
   
   use Net::eBay;
