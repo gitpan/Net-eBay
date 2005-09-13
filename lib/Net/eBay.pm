@@ -20,11 +20,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.15
+Version 0.16
 
 =cut
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 =head1 SYNOPSIS
 
@@ -264,9 +264,12 @@ The following defaults can be set:
 Legacy API set to expire in the summer of 2006, '2' means the API that
 supersedes it. All other values are illegal.
 
+* debug -- if debug is set to true, prints a lot of debugging information, XML sent and received etc.
+
 Example:
 
   $eBay->setDefaults( { API => 2 } ); # use new eBay API
+  $eBay->setDefaults( { API => 2, debug => 1 } ); # use new eBay API and also debug all calls
 
 =cut
 
@@ -379,7 +382,10 @@ sub submitRequest {
   my $res = $_ua->request($req);
   return undef unless $res;
 
-  #print "Content: " . $res->content . "\n";
+  if( $this->{debug} ) {
+    print STDERR "Content (debug of Net::eBay): " . $res->content . "\n";
+  }
+  
   $@ = "";
   my $result = undef;
   eval {

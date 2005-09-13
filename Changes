@@ -17,3 +17,4 @@ Revision history for Net-eBay
         Added script ebay-add-item.pl, showing how to add items using NEW Schema.
 0.14    Documentation cleanup
 0.15    Added a user's ability to specify XML attributes for the New Schema
+0.16    Added a little extra debugging
