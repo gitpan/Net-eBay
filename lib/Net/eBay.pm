@@ -20,11 +20,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.16
+Version 0.17
 
 =cut
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 =head1 SYNOPSIS
 
@@ -276,16 +276,18 @@ Example:
 sub setDefaults {
   my ($this, $defaults) = @_;
 
-  my $api = $defaults->{API};
-  if( $api != 1 && $api != 2 ) {
-    croak "Incorrect value of API ($api) is supplied in the hash. Use API => 1 or API => 2.";
+  if( defined $defaults->{API} ) {
+    my $api = $defaults->{API};
+    if( $api != 1 && $api != 2 ) {
+      croak "Incorrect value of API ($api) is supplied in the hash. Use API => 1 or API => 2.";
+    }
+    my $old = $this->{defaults}->{API};
+    $this->{defaults}->{API} = $api;
+
   }
 
-  my $old = $this->{defaults}->{API};
-  $this->{defaults}->{API} = $api;
-
-  $this->{debug} = $defaults->{debug} if $defaults->{debug};
-  return $old;
+  $this->{debug} = $defaults->{debug} if defined $defaults->{debug};
+  
 }
 
 =head2 submitRequest
