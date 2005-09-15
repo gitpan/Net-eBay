@@ -19,3 +19,4 @@ Revision history for Net-eBay
 0.15    Added a user's ability to specify XML attributes for the New Schema
 0.16    Added a little extra debugging
 0.17    Bug fix
+0.18    Added scripts to dist
