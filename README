@@ -34,7 +34,7 @@ Example of listing an item for sale:
                         {
                          DetailLevel => "0",
                          ErrorLevel => "1",
-                         SiteId = > "0",
+                         SiteId => "0",
                          Verb => "  AddItem",
                          Category => "14111",
                          CheckoutDetailsSpecified => "0",
