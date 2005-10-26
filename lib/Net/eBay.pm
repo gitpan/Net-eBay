@@ -20,11 +20,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.19
+Version 0.20
 
 =cut
 
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 =head1 SYNOPSIS
 
@@ -193,7 +193,7 @@ sub new {
   unless( $hash ) {
     if( defined $ENV{EBAY_INI_FILE} && -f $ENV{EBAY_INI_FILE} ) {
       $hash = $ENV{EBAY_INI_FILE};
-    } elsif( -f "$ENV{HOME}/.ebay.ini" ) {
+    } elsif( defined $ENV{HOME} && -f "$ENV{HOME}/.ebay.ini" ) {
       $hash = "$ENV{HOME}/.ebay.ini";
     } elsif( -f "ebay.ini" ) {
       $hash = "ebay.ini";

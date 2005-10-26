@@ -27,12 +27,15 @@ my $result = $eBay->submitRequest( "GetMyeBaySelling",
 if( ref $result ) {
   #print "Result: " . Dumper( $result ) . "\n";
 
+  print "   Item      W  B   Price Q   Title\n";
+  #7551933377   0  0   49.99 1 Siliconix Transistor tester IPT II 2 Monitor
+  
   foreach my $item (@{$result->{ActiveList}->{ItemArray}->{Item}}) {
-    print "$item->{ItemID} $item->{Quantity} $item->{Title} ";
-    print "$item->{WatchCount}w " if$item->{WatchCount};
-    print "(\$$item->{SellingStatus}->{CurrentPrice}->{content}";
-    print ", $item->{SellingStatus}->{BidCount} bids" if $item->{SellingStatus}->{BidCount};
-    print ")";
+    print "$item->{ItemID} ";
+    print sprintf( "%3d ", $item->{WatchCount} || 0 );
+    print sprintf( "%2d ", $item->{SellingStatus}->{BidCount} || 0 );
+    print sprintf( "%7.2f ", $item->{SellingStatus}->{CurrentPrice}->{content} );
+    print "$item->{Quantity} $item->{Title} ";
     print "\n";
   }
 
