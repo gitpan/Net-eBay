@@ -21,3 +21,4 @@ Revision history for Net-eBay
 0.17    Bug fix
 0.18    Added scripts to dist
 0.19    Added my ebay type script, get-ebay-item, and get-seller-items script
+0.21    Corrected handling of arrays
