@@ -10,6 +10,7 @@ use LWP::UserAgent;
 use HTTP::Request::Common;
 use HTTP::Status qw(status_message);
 use HTTP::Date qw(time2str str2time);
+use utf8;
 use Carp qw( croak );
 
 use vars qw( $_ua );
@@ -20,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.21
+Version 0.22
 
 =cut
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 =head1 SYNOPSIS
 
@@ -449,6 +450,12 @@ sub verifyAndPrint {
   return $cond;
 }
 
+sub UTF8 {
+  my $x = shift @_;
+  utf8::upgrade($x);
+  return $x;
+}
+
 sub hash2xml {
   my ($depth, $request, $optionalKey) = @_;
 
@@ -456,9 +463,9 @@ sub hash2xml {
   
   unless( ref $request ) {
     my $data = $request;
-    $data =~ s/\</\&lt\;/g;
-    $data =~ s/\>/\&gt\;/g;
-    return $data;
+    #$data =~ s/\</\&lt\;/g;
+    #$data =~ s/\>/\&gt\;/g;
+    return UTF8( $data );
   }
 
   my $xml;
