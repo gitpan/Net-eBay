@@ -26,44 +26,50 @@ To cancel, press Control-C, or hit ENTER to continue.
 
 ######################################################################
 # now, the actual work
-my $result = $eBay->submitRequest( "AddItem",
-                                   {
-                                    Item =>
-                                    {
-                                     Title => 'Test Item created with Net::eBay perl module L@@K NR',
-                                     BuyItNowPrice => 9.99,
-                                     Country => 'US',
-                                     Currency => 'USD',
-                                     Description => "
-<P>For sale is a <FONT COLOR=RED SIZE=+2><B>Like New Test Item</B></FONT>.
-<FONT SIZE=-1>Has rust and numerous dents</FONT>. Sold AS IS.</P>
 
-<P>
-  This listing was submitted using the New Schema: <CODE>\$eBay->setDefaults( { API => 2 } );</CODE>
-</P>
-
-<P>For information on Net::eBay perl module that created this listing, see
-http://search.cpan.org/~ichudov/</P>
-
-",
-                                     ListingDuration => 'Days_7',
-                                     Location => 'Tulsa, OK',
-                                     PaymentMethods => 'PayPal',
-                                     PayPalEmailAddress => 'you@example.com',
-                                     PrimaryCategory => { CategoryID => 14111 },
-                                     Quantity => 1,
-                                     TestAttribute => {
-                                                       _value => "abcd",
-                                                       _attributes => { currencyID => 'USD' }
-                                                      },
-                                     TestVector => [ qw( foo bar baz ) ],
-                                     RegionID => 0,
-                                     StartPrice => 0.99,
-                                    }
-                                   }
-                                 );
-if( ref $result ) {
-  print "Result: " . Dumper( $result ) . "\n";
-} else {
-  print "Unparsed result: \n$result\n\n";
+sub addItem {
+  my $args = shift @_;
+  my $description = $args->{Description} || die "No description supplied to AddItem";
+  
+  my $request =
+    {
+     Item =>
+     {
+      #BuyItNowPrice => 6.0,
+      Title => ($args->{Title} || die "No title supplied to AddItem"),
+      Country => $args->{Country} || "US",
+      Currency => $args->{Currency} || "USD",
+      Description => "<![CDATA[ $description ]]>", 
+      ListingDuration => $args->{ListingDuration} || "Days_7",
+      Location => $args->{Location} || "Lisle, IL, 60532", 
+      PaymentMethods => $args->{PaymentMethods} || 'PayPal',
+      PayPalEmailAddress => ($args->{PayPalEmailAddress} || 'myaddress@foobar.com'),
+      PrimaryCategory => {
+                          CategoryID => $args->{Category} || die "No category supplied to AddItem",
+                         },
+      Quantity => $args->{Quantity} || 1,
+      RegionID => 0,
+      StartPrice => ($args->{StartPrice} || die "No start price supplied to AddItem"),
+     }
+    };
+  
+  $request->{Item}->{BuyItNowPrice} = $args->{BuyItNowPrice} if $args->{BuyItNowPrice};
+  
+  my $result = $eBay->submitRequest( "AddItem", $request );
+  
+  if( ref $result ) {
+    print "Result: " . Dumper( $result ) . "\n";
+    return $result;
+  } else {
+    print "Unparsed result: \n$result\n\n";
+  }
 }
+
+addItem( { Title => 'foo bar',
+           Description => 'Almost new foobar no BIN',
+           StartPrice => '9.97',
+           Category => 1504,
+           #BuyItNowPrice => 12,
+           PayPalEmailAddress => 'ichudov@algebra.com',
+         }
+       );
