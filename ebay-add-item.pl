@@ -42,7 +42,7 @@ sub addItem {
       Description => "<![CDATA[ $description ]]>", 
       ListingDuration => $args->{ListingDuration} || "Days_7",
       Location => $args->{Location} || "Lisle, IL, 60532", 
-      PaymentMethods => $args->{PaymentMethods} || 'PayPal',
+      PaymentMethods => $args->{PaymentMethods} || [ 'PayPal', 'Other', 'CashOnPickup', 'MOCC'],
       PayPalEmailAddress => ($args->{PayPalEmailAddress} || 'myaddress@foobar.com'),
       PrimaryCategory => {
                           CategoryID => $args->{Category} || die "No category supplied to AddItem",
@@ -54,6 +54,7 @@ sub addItem {
     };
   
   $request->{Item}->{BuyItNowPrice} = $args->{BuyItNowPrice} if $args->{BuyItNowPrice};
+  $request->{Item}->{Gallery} => $args->{Gallery} if $args->{Gallery};
   
   my $result = $eBay->submitRequest( "AddItem", $request );
   

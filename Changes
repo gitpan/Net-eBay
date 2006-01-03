@@ -23,3 +23,5 @@ Revision history for Net-eBay
 0.19    Added my ebay type script, get-ebay-item, and get-seller-items script
 0.21    Corrected handling of arrays
 0.22    Added UTF-8 support, ebay-get-suggested-categories.pl example
+0.23    Cleanup
+0.24    Made SiteID settable with 'siteid' parameter

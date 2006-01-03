@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.23
+Version 0.24
 
 =cut
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 =head1 SYNOPSIS
 
@@ -234,8 +234,10 @@ sub new {
   
   if( $hash->{SiteLevel} eq 'prod' ) {
     $hash->{url} = 'https://api.ebay.com/ws/api.dll';
+    $hash->{public_url} = 'http://cgi.ebay.com/ws/eBayISAPI.dll';
   } elsif( $hash->{SiteLevel} eq 'dev' ) {
     $hash->{url} = 'https://api.sandbox.ebay.com/ws/api.dll';
+    $hash->{public_url} = 'http://cgi.sandbox.ebay.com/ws/eBayISAPI.dll';
   } else {
     return unless verifyAndPrint( 0, "Parameter SiteLevel is not defined or is wrong: '$hash->{SiteLevel}'" );
   }
@@ -267,6 +269,8 @@ supersedes it. All other values are illegal.
 
 * debug -- if debug is set to true, prints a lot of debugging information, XML sent and received etc.
 
+* siteid -- sets site id
+
 Example:
 
   $eBay->setDefaults( { API => 2 } ); # use new eBay API
@@ -288,6 +292,7 @@ sub setDefaults {
   }
 
   $this->{debug} = $defaults->{debug} if defined $defaults->{debug};
+  $this->{siteid} = $defaults->{siteid} if defined $defaults->{siteid};
   
 }
 
@@ -334,7 +339,11 @@ sub submitRequest {
   my ($this, $name, $request) = @_;
 
   my $req = HTTP::Request->new( POST => $this->{url} );
-  $req->header( 'X-EBAY-API-SITEID', $this->{siteid} );
+  if(defined $this->{defaults}->{siteid} ) {
+    $req->header( 'X-EBAY-API-SITEID', $this->{defaults}->{siteid} );
+  } else {
+    $req->header( 'X-EBAY-API-SITEID', $this->{siteid} );
+  }
   $req->header( 'X-EBAY-API-DEV-NAME', $this->{DeveloperKey} );
   $req->header( 'X-EBAY-API-DETAIL-LEVEL', '2' );
   $req->header( 'X-EBAY-API-CERT-NAME', $this->{CertificateKey} );

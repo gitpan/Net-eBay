@@ -11,7 +11,16 @@ my $eBay = new Net::eBay;
 # use new eBay API
 $eBay->setDefaults( { API => 2, debug => 0 } );
 
-#my $seller = shift @ARGV || die "Usage: $0 seller-id";
+my $nowatch = 0;
+
+while( @ARGV ) {
+  if( $ARGV[0] eq '--nowatch' ) {
+    shift @ARGV;
+    $nowatch = 1;
+  } else {
+    last;
+  }
+}
 
 my $result = $eBay->submitRequest( "GetMyeBaySelling",
                                    {
@@ -33,7 +42,11 @@ if( ref $result ) {
   
   foreach my $item (@{$result->{ActiveList}->{ItemArray}->{Item}}) {
     print "$item->{ItemID} ";
-    print sprintf( "%3d ", $item->{WatchCount} || 0 );
+    if( $nowatch ) {
+      print "    ";
+    } else {
+      print sprintf( "%3d ", $item->{WatchCount} || 0 );
+    }
     $watching += $item->{WatchCount} || 0;
     print sprintf( "%2d ", $item->{SellingStatus}->{BidCount} || 0 );
     print sprintf( "%7.2f ", $item->{SellingStatus}->{CurrentPrice}->{content} );
@@ -41,7 +54,9 @@ if( ref $result ) {
     print "\n";
   }
 
-  print "$result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
+  if( !$nowatch ) {
+    print "$result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
+  }
 } else {
   print "Unparsed result: \n$result\n\n";
 }
