@@ -25,3 +25,4 @@ Revision history for Net-eBay
 0.22    Added UTF-8 support, ebay-get-suggested-categories.pl example
 0.23    Cleanup
 0.24    Made SiteID settable with 'siteid' parameter
+0.25    Added method of setting special attributes

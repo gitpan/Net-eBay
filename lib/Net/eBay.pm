@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.24
+Version 0.25
 
 =cut
 
-our $VERSION = '0.24';
+our $VERSION = '0.25';
 
 =head1 SYNOPSIS
 
@@ -490,7 +490,7 @@ sub hash2xml {
         $xml .= "$a=\"$request->{_attributes}->{$a}\" ";
       }
       $xml .= ">";
-      $xml .= hash2xml( $depth+2, $request->{_value} );
+      $xml .= hash2xml( $depth+2, $request->{_value}, $request->{_tagName} );
       $xml .= "</$optionalKey>";
     } else {
       $xml = "\n";
