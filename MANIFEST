@@ -14,3 +14,4 @@ ebay-validate-test-user.pl
 ebay-get-my-selling.pl
 ebay-get-seller-list.pl
 ebay-get-suggested-categories.pl
+ebay-search.pl

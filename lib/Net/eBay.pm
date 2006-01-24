@@ -21,15 +21,17 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.25
+Version 0.26
 
 =cut
 
-our $VERSION = '0.25';
+our $VERSION = '0.26';
 
 =head1 SYNOPSIS
 
 This module helps user to easily execute queries against eBay's XML API.
+
+Email to ichudov@algebra.com with questions. Check CPAN for updates. 
 
 =head2 Getting Official Time
 
@@ -227,7 +229,7 @@ sub new {
   $hash->{siteid} = 0 unless $hash->{siteid};
 
   # We use eBay Legacy API (expires in summer of 2006) by default.
-  $hash->{defaults} = { API => 1 };
+  $hash->{defaults} = { API => 1, compatibility => 415 };
   
   return undef unless verifyAndPrint( defined $hash->{SiteLevel} && $hash->{SiteLevel},
                                       "SiteLevel must be defined" );
@@ -271,6 +273,8 @@ supersedes it. All other values are illegal.
 
 * siteid -- sets site id
 
+* compatibility -- "compatibility level" with eBay. Set to a sensible default.
+
 Example:
 
   $eBay->setDefaults( { API => 2 } ); # use new eBay API
@@ -293,6 +297,7 @@ sub setDefaults {
 
   $this->{debug} = $defaults->{debug} if defined $defaults->{debug};
   $this->{siteid} = $defaults->{siteid} if defined $defaults->{siteid};
+  $this->{compatibility} = $defaults->{compatibility} if defined $defaults->{compatibility};
   
 }
 
@@ -353,7 +358,7 @@ sub submitRequest {
 
   my $xml = "";
   if( $this->{defaults}->{API} == 1 ) {
-    $req->header( 'X-EBAY-API-COMPATIBILITY-LEVEL', '349' );
+    $req->header( 'X-EBAY-API-COMPATIBILITY-LEVEL', $this->{defaults}->{compatibility} );
     $req->header( 'X-EBAY-API-CALL-NAME', $name );
 
     $request->{Verb} = $name unless $request->{Verb};

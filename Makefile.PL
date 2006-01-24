@@ -9,7 +9,7 @@ WriteMakefile(
               ABSTRACT            => 'XML based communication with eBay API',
               PL_FILES            => {},
               EXE_FILES           => [ 'ebay-official-time.pl', 'ebay-validate-test-user.pl',
-                                       'ebay-get-categories.pl', 'ebay-add-item.pl'
+                                       'ebay-get-categories.pl', 'ebay-add-item.pl', 'ebay-search.pl'
                                      ],
               PREREQ_PM => {
                             'Test::More' => 0,

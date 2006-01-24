@@ -58,6 +58,6 @@ if( ref $result ) {
     print "$result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
   }
 } else {
-  print "Unparsed result: \n$result\n\n";
+  print STDERR "Unparsed result: \n$result\n\n";
 }
 
