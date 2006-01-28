@@ -17,7 +17,7 @@ do {
 my $query = join(" ", @ARGV );
 
 # use new eBay API
-$eBay->setDefaults( { API => 2, debug => 0 } );
+$eBay->setDefaults( { API => 2, debug => 1, compatibility => 391 } );
 
 my $result = $eBay->submitRequest( "GetSearchResults",
                                      {
@@ -25,8 +25,8 @@ my $result = $eBay->submitRequest( "GetSearchResults",
                                      }
                                    );
 if( ref $result ) {
-  #print "Result: " . Dumper( $result ) . "\n";
-
+  print "Result: " . Dumper( $result ) . "\n";
+  
   foreach my $i (@{$result->{SearchResultItemArray}->{SearchResultItem} }) {
     my $item = $i->{Item};
     print "$item->{ItemID} ";

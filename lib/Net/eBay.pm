@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.27
+Version 0.28
 
 =cut
 
-our $VERSION = '0.27';
+our $VERSION = '0.28';
 
 =head1 SYNOPSIS
 
@@ -297,8 +297,8 @@ sub setDefaults {
 
   $this->{debug} = $defaults->{debug} if defined $defaults->{debug};
   $this->{siteid} = $defaults->{siteid} if defined $defaults->{siteid};
-  $this->{compatibility} = $defaults->{compatibility} if defined $defaults->{compatibility};
-  
+  $this->{defaults}->{compatibility} = $defaults->{compatibility} if defined $defaults->{compatibility};
+  #print STDERR "Compatibility set to 
 }
 
 =head2 submitRequest
