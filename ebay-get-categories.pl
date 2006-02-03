@@ -26,20 +26,16 @@ print STDERR "GetCategories is a VERY expensive call. Do not make it often!\n";
 
 my $result = $eBay->submitRequest( "GetCategories",
                                    {
-                                    ErrorLevel => 1,
-                                    DetailLevel => 0,
+                                    #ErrorLevel => 1,
+                                    DetailLevel => 'ReturnAll',
                                     #Verb => "ValidateTestUserRegistration",
-                                    SiteId => $site,
-                                    ViewAllNodes => 1
+                                    #CategorySiteID => $site,
+                                    #ViewAllNodes => 1
                                    }
                                  );
 
 if( ref $result ) {
-  #print "Result: " . Dumper( $result ) . "\n";
-  my $count = $result->{Categories}->{CategoryCount};
-  print STDERR "Retrieved $count categories.\n";
-  
-  my $vec = $result->{Categories}->{Category};
+  my $vec = $result->{CategoryArray}->{Category};
   my $comma = "";
   foreach my $cat (@$vec) {
     foreach my $k (sort keys %$cat) {

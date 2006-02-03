@@ -29,3 +29,4 @@ Revision history for Net-eBay
 0.26    Changed minimum compatibility, made it also settable
 0.27    Improvement in compatibility
 0.28    Misc bug fixes
+0.29    MUCH improved command line search utility, and settable timeout

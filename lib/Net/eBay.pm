@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.28
+Version 0.29
 
 =cut
 
-our $VERSION = '0.28';
+our $VERSION = '0.29';
 
 =head1 SYNOPSIS
 
@@ -229,7 +229,7 @@ sub new {
   $hash->{siteid} = 0 unless $hash->{siteid};
 
   # We use eBay Legacy API (expires in summer of 2006) by default.
-  $hash->{defaults} = { API => 2, compatibility => 415 };
+  $hash->{defaults} = { API => 2, compatibility => 415, timeout => 50 };
   
   return undef unless verifyAndPrint( defined $hash->{SiteLevel} && $hash->{SiteLevel},
                                       "SiteLevel must be defined" );
@@ -275,6 +275,8 @@ supersedes it. All other values are illegal.
 
 * compatibility -- "compatibility level" with eBay. Set to a sensible default.
 
+* timeout -- sets default query timeout, default is 50 seconds
+
 Example:
 
   $eBay->setDefaults( { API => 2 } ); # use new eBay API
@@ -298,6 +300,7 @@ sub setDefaults {
   $this->{debug} = $defaults->{debug} if defined $defaults->{debug};
   $this->{siteid} = $defaults->{siteid} if defined $defaults->{siteid};
   $this->{defaults}->{compatibility} = $defaults->{compatibility} if defined $defaults->{compatibility};
+  $this->{defaults}->{timeout} = $defaults->{timeout} if defined $defaults->{timeout};
   #print STDERR "Compatibility set to 
 }
 
@@ -395,6 +398,9 @@ sub submitRequest {
     print STDERR "XML:\n$xml\n";
     print STDERR "Request: " . $req->as_string;
   }
+
+  my $timeout = $this->{defaults}->{timeout} || 50;
+  $_ua->timeout( $timeout );
 
   my $res = $_ua->request($req);
   return undef unless $res;
@@ -526,7 +532,6 @@ sub hash2xml {
 
 
 $_ua = LWP::UserAgent->new( agent => "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0; .NET CLR 1.1.4322)" );
-$_ua->timeout( 50 );
 
 
 1; # End of Net::eBay
