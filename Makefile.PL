@@ -13,6 +13,13 @@ WriteMakefile(
                                      ],
               PREREQ_PM => {
                             'Test::More' => 0,
+                            'XML::Simple' => 0,
+                            'XML::Dumper' => 0,
+                            'Data::Dumper' => 0,
+                            'LWP::UserAgent' => 0,
+                            'HTTP::Request::Common' => 0,
+                            'HTTP::Status' => 0,
+                            'HTTP::Date' => 0,
                            },
               dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
               clean               => { FILES => 'Net-eBay-*' },

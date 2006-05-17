@@ -31,3 +31,4 @@ Revision history for Net-eBay
 0.28    Misc bug fixes
 0.29    MUCH improved command line search utility, and settable timeout
 0.30    Docs reviewed
+0.31    Added module dependencies, and mention of Object::eBay

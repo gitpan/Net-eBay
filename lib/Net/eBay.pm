@@ -21,21 +21,25 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.30
+Version 0.31
 
 =cut
 
-our $VERSION = '0.30';
+our $VERSION = '0.31';
 
 =head1 SYNOPSIS
 
-This module helps user to easily execute queries against eBay's XML API.
+This module helps user to easily execute queries against eBay's XML API. Copyright Igor Chudov, ichudov@algebra.com.
 
     ##################################################
     # For support, docs, info, email to author go to #
     #                                                #
     #             http://www.net-ebay.org/           #
     ##################################################
+
+Also check out Object::eBay perl module for higher level abstraction
+built on top of Net::eBay. Object::eBay is a work of another
+individual, not Igor Chudov.
 
 =head2 Getting Official Time
 

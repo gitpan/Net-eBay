@@ -34,6 +34,7 @@ my $result = $eBay->submitRequest( "GetMyeBaySelling",
                                    }
                                  );
 my $watching = 0;
+my $items = 0;
 if( ref $result ) {
   #print "Result: " . Dumper( $result ) . "\n";
 
@@ -41,6 +42,7 @@ if( ref $result ) {
   #      7551933377   0  0   49.99 1 Siliconix Transistor tester IPT II 2 Monitor
   
   foreach my $item (@{$result->{ActiveList}->{ItemArray}->{Item}}) {
+    $items++;
     print "$item->{ItemID} ";
     if( $nowatch ) {
       print "    ";
@@ -55,7 +57,7 @@ if( ref $result ) {
   }
 
   if( !$nowatch ) {
-    print "$result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
+    print "$items items, $result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
   }
 } else {
   print STDERR "Unparsed result: \n$result\n\n";
