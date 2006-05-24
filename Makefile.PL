@@ -21,6 +21,7 @@ WriteMakefile(
                             'HTTP::Status' => 0,
                             'HTTP::Date' => 0,
                             'Net::SSLeay' => 0,
+                            'Crypt::SSLeay' => 0,
                            },
               dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
               clean               => { FILES => 'Net-eBay-*' },

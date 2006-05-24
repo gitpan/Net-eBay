@@ -33,3 +33,4 @@ Revision history for Net-eBay
 0.30    Docs reviewed
 0.31    Added module dependencies, and mention of Object::eBay
 0.32    Added module dependency on Net::SSLeay
+0.33    Added module dependency on Crypt::SSLeay

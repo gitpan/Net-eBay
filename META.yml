@@ -1,10 +1,11 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Net-eBay
-version:      0.32
+version:      0.33
 version_from: lib/Net/eBay.pm
 installdirs:  site
 requires:
+    Crypt::SSLeay:                 0
     Data::Dumper:                  0
     HTTP::Date:                    0
     HTTP::Request::Common:         0
