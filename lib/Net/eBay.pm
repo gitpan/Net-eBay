@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.33
+Version 0.35
 
 =cut
 
-our $VERSION = '0.33';
+our $VERSION = '0.35';
 
 =head1 SYNOPSIS
 
@@ -354,7 +354,7 @@ user.
 
 =cut
 
-sub submitRequest {
+sub submitRequestGetText {
   my ($this, $name, $request) = @_;
 
   my $req = HTTP::Request->new( POST => $this->{url} );
@@ -419,18 +419,24 @@ sub submitRequest {
   if( $this->{debug} ) {
     print STDERR "Content (debug of Net::eBay): " . $res->content . "\n";
   }
+
+  return $res->content;
+}
+
+sub submitRequest {
+  my $content = submitRequestGetText( @_ );
   
   $@ = "";
   my $result = undef;
   eval {
-    $result = XMLin( $res->content );
+    $result = XMLin( $content );
     #print "perl result=$result.\n";
   };
 
   return $result if $result;
   
   print STDERR "Error parsing XML ($@). \n";
-  return $res->content;
+  return $content;
 }
 
 =head2 officialTime

@@ -38,10 +38,13 @@ my $items = 0;
 if( ref $result ) {
   #print "Result: " . Dumper( $result ) . "\n";
 
-  print "   Item      W  B   Price Q   Title\n";
+  print "   Item        W  B   Price Q   Title\n";
   #      7551933377   0  0   49.99 1 Siliconix Transistor tester IPT II 2 Monitor
-  
-  foreach my $item (@{$result->{ActiveList}->{ItemArray}->{Item}}) {
+
+  my $items = $result->{ActiveList}->{ItemArray}->{Item};
+  $items = [$items] unless (ref $items) =~ /^ARRAY/;
+  my $count = 0;
+  foreach my $item (@$items) {
     $items++;
     print "$item->{ItemID} ";
     if( $nowatch ) {
@@ -54,10 +57,12 @@ if( ref $result ) {
     print sprintf( "%7.2f ", $item->{SellingStatus}->{CurrentPrice}->{content} );
     print "$item->{Quantity} $item->{Title} ";
     print "\n";
+
+    $count++;
   }
 
   if( !$nowatch ) {
-    print "$items items, $result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
+    print "$count items, $result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
   }
 } else {
   print STDERR "Unparsed result: \n$result\n\n";
