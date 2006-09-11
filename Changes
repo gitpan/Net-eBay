@@ -36,3 +36,5 @@ Revision history for Net-eBay
 0.33    Added module dependency on Crypt::SSLeay
 0.34    Added (purposely not well documented yet) submitRequestGetText
 0.35    Little cleanups here and there
+0.36    Better error reporting, patch courtesy of Michael Hendricks, a little expanded by me
+0.37    Added ebay-revise-item script, slightly improved error reporting

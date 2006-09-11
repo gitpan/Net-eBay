@@ -17,7 +17,7 @@ USAGE: $0 [--distance zipcode distance_in_miles] [--seller seller] terms
 }
 my $eBay = new Net::eBay;
 
-my ($seller, $zip, $distance, $category, $completed);
+my ($seller, $zip, $distance, $category, $completed, $exclude);
 
 my $done = 0;
 do {
@@ -30,6 +30,10 @@ do {
     $done = 1;
     shift;
     $category = shift;
+  } elsif( $ARGV[0] eq '--exclude-seller' ) {
+    $done = 1;
+    shift;
+    $exclude = shift;
   } elsif( $ARGV[0] eq '--completed' ) {
     $done = 1;
     shift;
@@ -58,6 +62,10 @@ if( defined $seller ) {
   $request->{UserIdFilter}->{IncludeSellers} = $seller;
 }
 
+if( defined $exclude ) {
+  $request->{UserIdFilter}->{ExcludeSellers} = $exclude;
+}
+
 if( defined $distance && defined $zip ) {
   $request->{ProximitySearch} = { MaxDistance => $distance, PostalCode => $zip };
 }
@@ -69,6 +77,19 @@ $request->{CategoryID} = $category if(defined $category);
 $request->{SearchType} = 'Completed' if(defined $completed); 
 
 $result = $eBay->submitRequest( "GetSearchResults", $request );
+
+#print STDERR "Before: Ref( result ) = " . ref( $result ) . ".\n";
+
+my $exitcode;
+
+if( ref( $result ) eq 'HASH' && defined  $result->{SearchResultItemArray} ) {
+  $exitcode = 0; # good
+  #print STDERR "Good results, ref = " . ref( $result ) . ", keys = " . join( ',', keys %$result ) . ".\n";
+} else {
+  #print STDERR "Exiting with error!\n";
+  exit 1;
+}
+
 $items = $result->{SearchResultItemArray}->{SearchResultItem};
 
 
@@ -111,6 +132,7 @@ if( ref $result ) {
       print sprintf( "%7.2f ", $price );
       print " $item->{Title} ";
       print "\n";
+
     }
   } else {
     #print Dumper( $result );
@@ -119,3 +141,5 @@ if( ref $result ) {
   print "Unparsed result: \n$result\n\n";
 }
 
+
+exit $exitcode;

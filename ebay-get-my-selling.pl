@@ -46,6 +46,11 @@ if( ref $result ) {
   my $count = 0;
   foreach my $item (@$items) {
     $items++;
+    unless( defined $item->{ItemID} ) {
+      print STDERR "Error! No ItemID!\n" . Dumper( $result ) . "\n\n";
+      exit 1;
+    }
+    
     print "$item->{ItemID} ";
     if( $nowatch ) {
       print "    ";
@@ -66,5 +71,7 @@ if( ref $result ) {
   }
 } else {
   print STDERR "Unparsed result: \n$result\n\n";
+  exit 1;
 }
 
+exit 0;
