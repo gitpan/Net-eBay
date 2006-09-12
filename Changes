@@ -38,3 +38,4 @@ Revision history for Net-eBay
 0.35    Little cleanups here and there
 0.36    Better error reporting, patch courtesy of Michael Hendricks, a little expanded by me
 0.37    Added ebay-revise-item script, slightly improved error reporting
+0.38    Fixed MANIFEST
