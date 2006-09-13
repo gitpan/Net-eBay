@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.38
+Version 0.39
 
 =cut
 
-our $VERSION = '0.38';
+our $VERSION = '0.39';
 
 =head1 SYNOPSIS
 
@@ -239,8 +239,7 @@ sub new {
   
   $hash->{siteid} = 0 unless $hash->{siteid};
 
-  # We use eBay Legacy API (expires in summer of 2006) by default.
-  $hash->{defaults} = { API => 2, compatibility => 415, timeout => 50 };
+  $hash->{defaults} = { API => 2, compatibility => 477, timeout => 50 };
   
   return undef unless verifyAndPrint( defined $hash->{SiteLevel} && $hash->{SiteLevel},
                                       "SiteLevel must be defined" );

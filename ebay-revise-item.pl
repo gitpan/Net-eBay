@@ -9,7 +9,13 @@ my $price = undef;
 my $quantity = undef;
 my $category = undef;
 my $bin = undef;
-my $item = `cat item.txt`; chomp $item;
+my $blockForeignBidders = undef;
+
+my $item = undef;
+if( -f 'item.txt' ) {
+  $item = `cat item.txt`;
+  chomp $item;
+}
 
 my $use_descr = 1;
 
@@ -34,12 +40,15 @@ while( $done ) {
   next if $done = get_argument( 'quantity', \$quantity );
   next if $done = get_argument( 'bin', \$bin );
   next if $done = get_argument( 'category', \$category );
+  next if $done = get_argument( 'block-foreign-bidders', \$blockForeignBidders );
 
   if( $done = get_argument( 'item', \$item ) ) {
     $use_descr = undef;
     next;
   }
 }
+
+die "Need to have item number either from item.txt or from --item argument" unless defined $item;
 
 die "invalid itemid '$item'" unless $item =~ /^\d+$/;
 
@@ -58,6 +67,9 @@ $request->{Item}->{Quantity}      = $quantity if ( $quantity );
 $request->{Item}->{BuyItNowPrice} = $bin if ( $bin ); 
 $request->{Item}->{PrimaryCategory} = $category if ( $category ); 
 
+$request->{Item}->{BuyerRequirements}->{MinimumFeedbackScore} = -1;
+$request->{Item}->{BuyerRequirements}->{ShipToRegistrationCountry} = $blockForeignBidders if $blockForeignBidders;
+
 if( $use_descr ) {
   die 'no file index.html' unless -f 'index.html';
   my $descr = `cat index.html`;
@@ -69,7 +81,12 @@ my $ebay = new Net::eBay;
 my $result = $ebay->submitRequest( 'ReviseItem', $request );
 
 if( ref $result ) {
-  #print "Succeeded\n" . Dumper( $result ) . "\n\n";
+
+  if( $result->{Errors} ) {
+    print "FAILED!!!\n" . Dumper( $result ) . "\n\n";
+    exit 1;
+  }
+
   print "Succeeded!\n\n";
 
   my $total = 0;
