@@ -16,3 +16,4 @@ ebay-get-seller-list.pl
 ebay-get-suggested-categories.pl
 ebay-search.pl
 ebay-revise-item.pl
+ebay-leave-feedback.pl
