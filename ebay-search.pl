@@ -17,7 +17,7 @@ USAGE: $0 [--distance zipcode distance_in_miles] [--seller seller] terms
 }
 my $eBay = new Net::eBay;
 
-my ($seller, $zip, $distance, $category, $completed, $exclude);
+my ($seller, $zip, $distance, $category, $completed, $exclude, $detail, $nobids);
 
 my $done = 0;
 do {
@@ -38,6 +38,14 @@ do {
     $done = 1;
     shift;
     $completed = 1;
+  } elsif( $ARGV[0] eq '--detail' ) {
+    $done = 1;
+    shift;
+    $detail = 1;
+  } elsif( $ARGV[0] eq '--nobids' ) {
+    $done = 1;
+    shift;
+    $nobids = 1;
   } elsif( $ARGV[0] eq '--distance' ) {
     $done = 1;
     shift;
@@ -78,6 +86,8 @@ $request->{SearchType} = 'Completed' if(defined $completed);
 
 $result = $eBay->submitRequest( "GetSearchResults", $request );
 
+print Dumper( $result ) if $detail;
+
 #print STDERR "Before: Ref( result ) = " . ref( $result ) . ".\n";
 
 my $exitcode;
@@ -87,7 +97,15 @@ if( ref( $result ) eq 'HASH' && defined  $result->{SearchResultItemArray} ) {
   #print STDERR "Good results, ref = " . ref( $result ) . ", keys = " . join( ',', keys %$result ) . ".\n";
 } else {
   #print STDERR "Exiting with error!\n";
-  exit 1;
+  if( $result->{Ack} eq 'Success' ) {
+    # Succeeded, but no results
+    print STDERR "Nothing found.\n";
+    exit 0;
+  } else {
+    print STDERR "ERROR During Query.\n";
+    print Dumper( $result );
+    exit 1;
+  }
 }
 
 $items = $result->{SearchResultItemArray}->{SearchResultItem};
@@ -124,7 +142,7 @@ if( ref $result ) {
 
 
 
-      print sprintf( "%2d ", $item->{SellingStatus}->{BidCount} || 0 );
+      print sprintf( "%2d ", $item->{SellingStatus}->{BidCount} || 0 ) unless $nobids;
       print sprintf( "%25s ", $local_endtime );
       my $price = (0 &&defined $category
                    ? $item->{SellingStatus}->{CurrentPrice}

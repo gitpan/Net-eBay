@@ -10,6 +10,9 @@ my $quantity = undef;
 my $category = undef;
 my $bin = undef;
 my $blockForeignBidders = undef;
+my $call = "ReviseItem";
+my $gallery = undef;
+my $duration = undef;
 
 my $item = undef;
 if( -f 'item.txt' ) {
@@ -34,12 +37,22 @@ sub get_argument {
 
 while( $done ) {
   $done = 0;
+
+  if( $ARGV[0] eq '--relist' ) {
+    $call = 'RelistItem';
+    $done = 1;
+    shift @ARGV;
+    next;
+  }
+  
   next if $done = get_argument( 'title', \$title );
   next if $done = get_argument( 'subtitle', \$subtitle );
   next if $done = get_argument( 'price', \$price );
   next if $done = get_argument( 'quantity', \$quantity );
   next if $done = get_argument( 'bin', \$bin );
   next if $done = get_argument( 'category', \$category );
+  next if $done = get_argument( 'gallery', \$gallery );
+  next if $done = get_argument( 'duration', \$duration );
   next if $done = get_argument( 'block-foreign-bidders', \$blockForeignBidders );
 
   if( $done = get_argument( 'item', \$item ) ) {
@@ -65,10 +78,16 @@ $request->{Item}->{SubTitle}      = $subtitle if ( $subtitle );
 $request->{Item}->{StartPrice}    = $price if ( $price ); 
 $request->{Item}->{Quantity}      = $quantity if ( $quantity ); 
 $request->{Item}->{BuyItNowPrice} = $bin if ( $bin ); 
-$request->{Item}->{PrimaryCategory} = $category if ( $category ); 
+
+$request->{Item}->{ListingDuration}      = "Days_$duration" if ( $duration );
+
+$request->{Item}->{PrimaryCategory} = $category if ( $category );
+
+$request->{Item}->{PictureDetails}->{GalleryURL} = $gallery if ( $gallery ); 
+$request->{Item}->{PictureDetails}->{GalleryType} = 'Gallery' if ( $gallery ); 
 
 $request->{Item}->{BuyerRequirements}->{MinimumFeedbackScore} = -1;
-$request->{Item}->{BuyerRequirements}->{ShipToRegistrationCountry} = $blockForeignBidders if $blockForeignBidders;
+$request->{Item}->{BuyerRequirements}->{ShipToRegistrationCountry} = $blockForeignBidders if defined $blockForeignBidders;
 
 if( $use_descr ) {
   die 'no file index.html' unless -f 'index.html';
@@ -78,7 +97,9 @@ if( $use_descr ) {
 
 my $ebay = new Net::eBay;
 
-my $result = $ebay->submitRequest( 'ReviseItem', $request );
+print STDERR "Calling $call...\n";
+
+my $result = $ebay->submitRequest( $call, $request );
 
 if( ref $result ) {
 

@@ -41,3 +41,4 @@ Revision history for Net-eBay
 0.38    Fixed MANIFEST
 0.39    Changed default compatibility level to 477, improved scripts such as revise item.
 0.40    Added a ebay-leave-feedback.pl script
+0.41    Added ebay-get-item script

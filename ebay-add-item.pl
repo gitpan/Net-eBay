@@ -1,76 +1,380 @@
 #!/usr/bin/perl
 
-use strict;
-use warnings;
-  
+#
+# This script is kind of big compared to others. That's because it is
+# not just a sample script, I use this script daily to sell stuff on eBay.
+# Hence a lot of things here are tailored to my own use of eBay. This
+# script does not let you control every parameter of ebay's AddItem call,
+# and sets some defaults that I like (like using UPS if I specify shipping
+# weight). Use it as a guide to write your own scripts, no more. 
+#
+
 use Net::eBay;
 use Data::Dumper;
 
-my $eBay = new Net::eBay;
+my $usage = "usage: $0 {options} category minbid name";
 
-# use new eBay API
-$eBay->setDefaults( { API => 2, debug => 1 } );
+my $command = "$0 '" . join( "' '", @ARGV ) . "'";
 
-###########################################################################
-# safety check to make sure that you do not do something stupid and pay $$$
-#
-if( $eBay->{SiteLevel} ne 'dev' ) {
-  print "Warning, you are trying to do something that will COST YOU MONEY!
-Submitting test auctions to live ebay site will cost you about a dollar or so.
-Listing fees are NOT REFUNDABLE!
+my $subtitle   = undef;
+my $siteid     = 0;
+my $fake       = 0;
+my $debug      = 0;
+my $quantity   = 1;
+my $sitehosted = undef;
+my $shipping   = undef;
+my $zipcode    = "60532";
+my $listingType = undef;
+my $done = 1;
 
-To cancel, press Control-C, or hit ENTER to continue.
-";
-  my $dummy = <STDIN>;
+sub get_argument {
+  my ($name,$ref) = @_;
+  if( $ARGV[0] eq "--$name" ) {
+    shift @ARGV;
+    $$ref = shift @ARGV;
+    die "--$name requires an argument!" unless defined $$ref;
+    return 1;
+  }
+  return undef;
 }
 
-######################################################################
-# now, the actual work
+while( $done ) {
+  $done = 0;
 
-sub addItem {
-  my $args = shift @_;
-  my $description = $args->{Description} || die "No description supplied to AddItem";
+  #print STDERR "A0=$ARGV[0].\n";
   
-  my $request =
-    {
-     Item =>
-     {
-      #BuyItNowPrice => 6.0,
-      Title => ($args->{Title} || die "No title supplied to AddItem"),
-      Country => $args->{Country} || "US",
-      Currency => $args->{Currency} || "USD",
-      Description => "<![CDATA[ $description ]]>", 
-      ListingDuration => $args->{ListingDuration} || "Days_7",
-      Location => $args->{Location} || "Lisle, IL, 60532", 
-      PaymentMethods => $args->{PaymentMethods} || [ 'PayPal', 'Other', 'CashOnPickup', 'MOCC'],
-      PayPalEmailAddress => ($args->{PayPalEmailAddress} || 'myaddress@foobar.com'),
-      PrimaryCategory => {
-                          CategoryID => $args->{Category} || die "No category supplied to AddItem",
-                         },
-      Quantity => $args->{Quantity} || 1,
-      RegionID => 0,
-      StartPrice => ($args->{StartPrice} || die "No start price supplied to AddItem"),
-     }
-    };
+  next if $done = get_argument( 'type', \$listingType );
+  next if $done = get_argument( 'subtitle', \$subtitle );
+  next if $done = get_argument( 'quantity', \$quantity );
+  next if $done = get_argument( 'zipcode', \$zipcode );
+  next if $done = get_argument( 'shipping', \$shipping );
+  next if $done = get_argument( 'siteid', \$siteid );
+  next if $done = get_argument( 'sitehosted', \$sitehosted );
   
-  $request->{Item}->{BuyItNowPrice} = $args->{BuyItNowPrice} if $args->{BuyItNowPrice};
-  $request->{Item}->{Gallery} => $args->{Gallery} if $args->{Gallery};
+  if( $ARGV[0] eq '--debug' ) {
+    shift @ARGV;
+    $debug = 1;
+    $done = 1;
+    next;
+  }
   
-  my $result = $eBay->submitRequest( "AddItem", $request );
-  
-  if( ref $result ) {
-    print "Result: " . Dumper( $result ) . "\n";
-    return $result;
-  } else {
-    print "Unparsed result: \n$result\n\n";
+  if( $ARGV[0] eq '--fake' ) {
+    shift @ARGV;
+    $fake = 1;
+    $done = 1;
+    next;
   }
 }
 
-addItem( { Title => 'foo bar',
-           Description => 'Almost new foobar no BIN',
-           StartPrice => '9.97',
-           Category => 1504,
-           #BuyItNowPrice => 12,
-           PayPalEmailAddress => 'ichudov@algebra.com',
-         }
-       );
+my $category = shift @ARGV || die $usage;
+die $usage unless $category =~ /^\d+(,\d+)*$/;
+
+my $minimumBid = shift @ARGV || die $usage;
+
+my $bin;
+
+if( $minimumBid =~ /(\d+(\.\d+)?)(\/\d+)?/ ) {
+  $bin = $3;
+  $bin =~ s/\///g;
+  $minimumBid =~ s/\/.*$//;
+} else {
+  die $usage;
+}
+
+
+my $name = join( " ", @ARGV) || die $usage;
+
+my $ptitle = $name;
+$ptitle =~ s/\"/\\\"/g;
+
+###################################################################### Check args
+if( defined $listingType ) {
+  my $legal = {
+               Chinese => 1,
+               Dutch => 1,
+               Auction => 1,
+               StoresFixedPrice => 1,
+               FixedPriceItem => 1,
+              };
+  die "Illegal auction type '$listingType'. Legal codes are: " . join( ', ', sort keys %$legal )
+    unless $legal->{$listingType};
+}
+
+
+open( INDEX, "index.html" ) || die "Cannot open index.html";
+my $index = "";
+$index .= "$_" while <INDEX>;
+close( INDEX );
+
+
+
+my $picurl;
+
+if( -f ".picurl" ) {
+  open( PIC, ".picurl" );
+  $picurl = <PIC>;
+  chomp $picurl;
+  close( PIC );
+}
+
+my $appData = `pwd`;
+{
+  chomp $appData;
+  my @d = split( /\//, $appData );
+  $appData = pop @d;
+}
+
+my $eBay = new Net::eBay();
+$eBay->setDefaults( { siteid => $siteid, debug => $debug } );
+
+# use new eBay API
+$eBay->setDefaults( { API => 2, debug => $debug } );
+
+#########################################
+# Now interpret shipping!
+#
+# Format: [weight[-size1xsize2xsize3]]+handling
+#
+# no weight means fixed shipping cost equal to 'handling'
+#
+# Examples:
+#
+#    70-12x22x13+15 -- 70 lbs, 12x22x13 in, 15 dollars handling
+#    +15            -- $15 fixed fee
+#    40+15          -- no size (default 12x12x12_
+#
+# Note that I use UPS ground only as my shipping method
+#
+
+my $shippingDetails;
+
+if( !defined $shipping && $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
+  $shipping = "+$1"; # flat from auction text
+}
+
+{
+  my $s = $shipping;
+  my $weight = undef;
+  $weight = $1 if $s =~ s/^(\d+)//;
+
+  my ($d1, $d2, $d3) = (12, 12, 12);
+  ($d1, $d2, $d3) = ($1, $2, $3) if $weight && $s =~ s/^-(\d+)x(\d+)x(\d+)//;
+
+  my $handling = 0;
+  $handling = $1 if $s =~ s/^\+(\d+(\.\d+)?)//;
+
+  print STDERR "SHIPPING: Weight = $weight, dimensions = $d1-$d2-$d3, handling = $handling.\n";
+
+  die "Incorrectly specified shipping '$shipping' => '$s'" unless $s eq "";
+
+  if( $weight ) {
+    # Calculated Rate
+    $shippingDetails = {
+                        CalculatedShippingRate => {
+                                                   OriginatingPostalCode => $zipcode,
+                                                   PackageDepth => $d1,
+                                                   PackageLength => $d2,
+                                                   PackageWidth => $d3,
+                                                   PackagingHandlingCosts => { _attributes => { currencyID => 'USD' },
+                                                                               _value => $handling
+                                                                             },
+                                                   WeightMajor => $weight,
+                                                   ShippingPackage => 'PackageThickEnvelope',
+                                                  },
+                        ShippingServiceOptions => {
+                                                   ShippingService => 'UPSGround'
+                                                  },
+                        ShippingType => 'Calculated',
+                       };
+  } else {
+    # Flat Rate
+    #
+    # If handling is not specified, no shipping details will be provided!
+    #
+    if( $handling ) {
+      $shippingDetails = {
+                          ShippingServiceOptions => {
+                                                     ShippingService => 'Other',
+                                                     ShippingServiceCost => $handling
+                                                    },
+                          ShippingType => 'Flat',
+                         };
+    } 
+  }
+  
+  #print STDERR "\n\nShipping $shippingDetails: \n" . Dumper( $shippingDetails ) . "\n";
+
+  #exit 0;
+}
+
+my $args =
+  {
+     Item =>
+     {
+         debug => $debug,
+      #BuyItNowPrice => 6.0,
+      Title => $ptitle,
+      Country => "US",
+      Currency => "USD",
+      Description => "<![CDATA[ $index ]]>", 
+      ListingDuration => "Days_7",
+      Location => "Lisle, IL",
+      PostalCode => $zipcode,
+      PaymentMethods => [ 'PayPal', 'Other', 'CashOnPickup', 'MOCC'],
+      PayPalEmailAddress => 'ichudov@algebra.com',
+      PrimaryCategory => {
+                          CategoryID => [ split( /,/, $category ) ]
+                         },
+      Quantity => $quantity,
+      RegionID => 0,
+      StartPrice => $minimumBid,
+      HitCounter => 'GreenLED'
+     }
+  };
+
+#$args->{Item}->{ApplicationData} = $appData if defined $appData && $appData;
+
+$args->{Item}->{BuyItNowPrice} = $bin if $bin;
+
+$args->{Item}->{ListingType} = $listingType if defined $listingType;
+
+if( $shippingDetails ) {
+  $args->{Item}->{ShippingDetails} = $shippingDetails;
+}
+
+if( defined $subtitle ) {
+  $args->{Item}->{SubTitle} = $subtitle;
+}
+
+if( $picurl ) {
+  $args->{Item}->{VendorHostedPicture} =
+    {
+     GalleryType => 'Gallery',
+     GalleryURL => $picurl,
+     PictureURL => $picurl,
+     SelfHostedURL => $picurl,
+    };
+}
+
+if( $sitehosted ) {
+  $args->{Item}->{SiteHostedPicture}->{PictureURL} = $sitehosted;
+}
+
+print "
+
+                ________________________________________
+                R E V I E W    Y O U R     A U C T I O N
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Title:    $ptitle
+            ####################################################### (" . length( $ptitle ) . "/55)
+";
+
+if( $subtitle ) {
+  print "
+  SubTitle: $subtitle
+            ####################################################### (" . length( $subtitle ) . "/55)
+";
+}
+
+print "
+  Category      : $category
+  Starting Price: $minimumBid
+  BIN           : $bin
+  Shipping      : $shipping
+";
+
+if( length( $ptitle ) > 55 ) {
+  print STDERR "Error, title too long.\n";
+  exit;
+}
+
+{
+  my $verify = $eBay->submitRequest( 'VerifyAddItem', $args );
+  
+  my $total = 0;
+  foreach my $fee (@{$verify->{Fees}->{Fee}}) {
+    my $amount = $fee->{Fee}->{content};
+    
+    next unless $amount > 0 && $fee->{Name} ne 'ListingFee';
+    
+    print sprintf( "%16s", $fee->{Name} ) . ": $amount.\n";
+    $total += $amount;
+  }
+  print "       TOTAL FEE: $total            <===** \n\n";
+
+  unless( $total ) {
+    print Dumper( $verify );
+    exit 1;
+  }
+}
+
+if( !$fake && -t STDIN ) {
+  print "Press Enter to continue:\n";
+  my $dummy = <STDIN>;
+}
+
+
+unless( $fake ) {
+  open( SAVE, ">relist.sh" );
+  print SAVE "$command\n\n";
+  close( SAVE );
+  chmod 0755, "relist.sh";
+}
+
+my $request = $fake ? "VerifyAddItem" : "AddItem";
+my $result = $eBay->submitRequest( $request, $args );
+
+if( ref $result ) {
+  if( $result->{ItemID} ) {
+    unless( $fake ) {
+      open( ITEM, ">item.txt" );
+      print ITEM "$result->{ItemID}\n";
+      close( ITEM );
+    }
+    
+    if( $fake ) {
+      print "FAKE LISTING ATTEMPT SUCCEEDED!\n\n";
+    } else {
+      #print "Result: " . Dumper( $result ) . "\n";
+      print "----------------------------------------------------------------- CONGRATS
+Your item was listed:
+
+  $eBay->{public_url}?ViewItem&item=$result->{ItemID}
+
+";
+    }
+    my $total = 0;
+    foreach my $fee (@{$result->{Fees}->{Fee}}) {
+      my $amount = $fee->{Fee}->{content};
+      
+      next unless $amount > 0 && $fee->{Name} ne 'ListingFee';
+      
+      print "Fee: $fee->{Name}: $amount.\n";
+      $total += $amount;
+    }
+    print "-----------------------------
+TOTAL FEE: $total
+
+";
+    system( "check-ebay-activity.sh reset & " );
+
+    if( open( ANN, ">annotation.txt" ) ) {
+      print ANN $ptitle;
+      close( ANN );
+      
+      system( "cpak annotation.txt" );
+      print STDERR "Wrote and COPIED annotation.txt\n";
+      
+    } else {
+      print STDERR "FAILED TO WRITE annotation.txt\n";
+    }
+  } else {
+    print "ERROR in Result: " . Dumper( $result ) . "\n";
+    
+  }
+} else {
+  print "Unparsed result: \n$result\n\n";
+}
+
+

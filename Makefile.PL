@@ -10,7 +10,7 @@ WriteMakefile(
               PL_FILES            => {},
               EXE_FILES           => [ 'ebay-official-time.pl', 'ebay-validate-test-user.pl',
                                        'ebay-get-categories.pl', 'ebay-add-item.pl', 'ebay-search.pl',
-                                       'ebay-revise-item.pl'
+                                       'ebay-revise-item.pl', 'ebay-get-item.pl'
                                      ],
               PREREQ_PM => {
                             'Test::More' => 0,
@@ -23,6 +23,9 @@ WriteMakefile(
                             'HTTP::Date' => 0,
                             'Net::SSLeay' => 0,
                             'Crypt::SSLeay' => 0,
+                            'HTML::TreeBuilder' => 0,
+                            'HTML::PrettyPrinter' => 0,
+                            'HTML::FormatText' => 0,
                            },
               dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
               clean               => { FILES => 'Net-eBay-*' },

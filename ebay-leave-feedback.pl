@@ -7,7 +7,8 @@ use Net::eBay;
 use Data::Dumper;
 use DateTime::Precise;
 
-my $usage = "Usage: $0 item-id feedback text";
+my $usage = "Usage: $0 item-id{,item-id} feedback text\nNote:no spaces between item ids, ONLY COMMAS";
+
 die $usage unless @ARGV;
 
 my ($detail, $debug);
@@ -24,36 +25,44 @@ my $eBay = new Net::eBay;
 # use new eBay API
 $eBay->setDefaults( { API => 2, debug => $debug } );
 
-my $item = shift @ARGV or die $usage;
+my $items = shift @ARGV || die $usage;
 
-my $text = join( ' ', @ARGV ) or die $usage;
+foreach my $item ( split( /,/, $items ) ) {
 
-my $result = $eBay->submitRequest( "GetItem",
-                                   {
-                                    ItemID => $item
-                                   }
-                                 );
-if( ref $result ) {
-  if( $debug ) {
-    print "Result: " . Dumper( $result ) . "\n";
-  }
+  die $usage unless $item =~ /^\d+$/;
   
-  my $high_bidder = $result->{Item}->{SellingStatus}->{HighBidder}->{UserID};
+  my $text = join( ' ', @ARGV ) or die $usage;
   
-  if( $high_bidder ) {
-    my $fb = {
-              ItemID => $item,
-              TargetUser => $high_bidder,
-              CommentType => 'Positive',
-              CommentText => $text
-             };
-
-    my $fbresult = $eBay->submitRequest( "LeaveFeedback",
-                                         $fb );
-
-    print Dumper( $fbresult );
+  my $result = $eBay->submitRequest( "GetItem",
+                                     {
+                                      ItemID => $item
+                                     }
+                                   );
+  if( ref $result ) {
+    if( $debug ) {
+      print "Result: " . Dumper( $result ) . "\n";
+    }
+    
+    my $high_bidder = $result->{Item}->{SellingStatus}->{HighBidder}->{UserID};
+    
+    if( $high_bidder ) {
+      my $fb = {
+                ItemID => $item,
+                TargetUser => $high_bidder,
+                CommentType => 'Positive',
+                CommentText => $text
+               };
+      
+      my $fbresult = $eBay->submitRequest( "LeaveFeedback",
+                                           $fb );
+      
+      print "$item ($result->{Item}->{Title}): $fbresult->{Ack}\n";
+      unless( $fbresult->{Ack} eq 'Success' ) {
+        #print Dumper( $fbresult );
+        print "Why: $fbresult->{Errors}->{LongMessage}\n";
+      }
+    }
+  } else {
+    print "Unparsed result: \n$result\n\n";
   }
-} else {
-  print "Unparsed result: \n$result\n\n";
 }
-

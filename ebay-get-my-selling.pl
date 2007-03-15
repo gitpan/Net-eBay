@@ -35,6 +35,7 @@ my $result = $eBay->submitRequest( "GetMyeBaySelling",
                                  );
 my $watching = 0;
 my $items = 0;
+my $things = 0;
 if( ref $result ) {
   #print "Result: " . Dumper( $result ) . "\n";
 
@@ -60,14 +61,22 @@ if( ref $result ) {
     $watching += $item->{WatchCount} || 0;
     print sprintf( "%2d ", $item->{SellingStatus}->{BidCount} || 0 );
     print sprintf( "%7.2f ", $item->{SellingStatus}->{CurrentPrice}->{content} );
-    print "$item->{Quantity} $item->{Title} ";
+
+    my $q = $item->{Quantity};
+    $things += $q;
+
+    if( defined $item->{QuantityAvailable} && $item->{QuantityAvailable} != $item->{Quantity} ) {
+      $q = "$item->{QuantityAvailable}/$item->{Quantity}";
+    }
+
+    print "$q $item->{Title} ";
     print "\n";
 
     $count++;
   }
 
   if( !$nowatch ) {
-    print "$count items, $result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
+    print "$count listings, $things things, $result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
   }
 } else {
   print STDERR "Unparsed result: \n$result\n\n";
