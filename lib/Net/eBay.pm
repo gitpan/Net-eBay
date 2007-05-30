@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.41
+Version 0.42
 
 =cut
 
-our $VERSION = '0.41';
+our $VERSION = '0.42';
 
 =head1 SYNOPSIS
 
@@ -429,6 +429,9 @@ sub submitRequestGetText {
 }
 
 sub submitRequest {
+
+  my ($this) = @_;
+  
   my $content = submitRequestGetText( @_ );
   
   $@ = "";
@@ -438,6 +441,8 @@ sub submitRequest {
     #print "perl result=$result.\n";
   };
 
+  $this->{_last_text} = $content;
+  
   return $result if $result;
   
   print STDERR "Error parsing XML ($@). REF(content) = " . ref( $content ) . " CONTENT=$content\n";

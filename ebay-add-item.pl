@@ -25,6 +25,7 @@ my $sitehosted = undef;
 my $shipping   = undef;
 my $zipcode    = "60532";
 my $listingType = undef;
+my $duration   = 7;
 my $done = 1;
 
 sub get_argument {
@@ -45,6 +46,7 @@ while( $done ) {
   
   next if $done = get_argument( 'type', \$listingType );
   next if $done = get_argument( 'subtitle', \$subtitle );
+  next if $done = get_argument( 'duration', \$duration );
   next if $done = get_argument( 'quantity', \$quantity );
   next if $done = get_argument( 'zipcode', \$zipcode );
   next if $done = get_argument( 'shipping', \$shipping );
@@ -217,7 +219,7 @@ my $args =
       Country => "US",
       Currency => "USD",
       Description => "<![CDATA[ $index ]]>", 
-      ListingDuration => "Days_7",
+      ListingDuration => "Days_$duration",
       Location => "Lisle, IL",
       PostalCode => $zipcode,
       PaymentMethods => [ 'PayPal', 'Other', 'CashOnPickup', 'MOCC'],

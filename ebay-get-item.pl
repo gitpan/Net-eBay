@@ -14,7 +14,7 @@ use HTML::FormatText;
 
 die "Usage: $0 item-ids..." unless @ARGV;
 
-my ($detail, $debug, $description);
+my ($detail, $debug, $description, $csv);
 
 my $done;
 
@@ -34,6 +34,11 @@ do {
     shift;
     $done = 1;
     $description = 1;
+  }
+  if($ARGV[0] eq '--csv' ) {
+    shift;
+    $done = 1;
+    $csv = 1;
   }
 } while( $done );
 
@@ -101,8 +106,13 @@ foreach my $item (@ARGV) {
 
       $info = "($info)" if $info;
     }
-    
-    print "Item $item: $result->{Item}->{Title}
+
+    if( $csv ) {
+      my $t = $result->{Item}->{Title};
+      $t =~ s/,/;/g;
+      print "item=$item,$t,Q=$quantity,Sold=$sold,$high_bidder $info $bidcount,Price=$result->{Item}->{SellingStatus}->{CurrentPrice}->{content}\n";
+    } else {
+      print "Item $item: $result->{Item}->{Title}
 Ends:            $local_endtime (your local time)
 Time Left:       $left
 Quantity $quantity, $sold sold, $qleft left
@@ -110,6 +120,7 @@ High Bidder:     $high_bidder $info $bidcount
 High Bid:        $result->{Item}->{SellingStatus}->{CurrentPrice}->{content}
 
 ";
+    }
     if( $description ) {
       my $html =  $result->{Item}->{Description} . "\n";
       my $tree = HTML::TreeBuilder->new;
