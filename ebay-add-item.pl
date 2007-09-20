@@ -69,7 +69,7 @@ while( $done ) {
 }
 
 my $category = shift @ARGV || die $usage;
-die $usage unless $category =~ /^\d+(,\d+)*$/;
+die "$usage (cat=$category)"  unless $category =~ /^\d+(,\d+)*$/;
 
 my $minimumBid = shift @ARGV || die $usage;
 
@@ -249,13 +249,21 @@ if( defined $subtitle ) {
 }
 
 if( $picurl ) {
-  $args->{Item}->{VendorHostedPicture} =
-    {
-     GalleryType => 'Gallery',
-     GalleryURL => $picurl,
-     PictureURL => $picurl,
-     SelfHostedURL => $picurl,
-    };
+  if( 0 ) {
+    $args->{Item}->{VendorHostedPicture} =
+      {
+       GalleryType => 'Gallery',
+       GalleryURL => $picurl,
+       PictureURL => $picurl,
+       SelfHostedURL => $picurl,
+      };
+  } else {
+    $args->{Item}->{PictureDetails} = {
+                                       GalleryType => 'Gallery',
+                                       GalleryURL  => $picurl,
+                                       
+                                      };
+  }
 }
 
 if( $sitehosted ) {

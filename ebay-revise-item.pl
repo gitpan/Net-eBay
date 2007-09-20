@@ -124,6 +124,16 @@ TOTAL FEE: $total
 
 ";
 
+  if( $call eq 'RelistItem' ) {
+    if( $result->{ItemID} ) {
+      open( ITEM, ">item.txt" );
+      print ITEM "$result->{ItemID}\n";
+      close( ITEM );
+    } else {
+      print STDERR "Strange, no item id given by relisting.\n";
+    }
+  }
+
 } else {
   print "Failed: " . Dumper( $result ) . "\n";
 }

@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.42
+Version 0.43
 
 =cut
 
-our $VERSION = '0.42';
+our $VERSION = '0.43';
 
 =head1 SYNOPSIS
 

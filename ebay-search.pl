@@ -15,9 +15,17 @@ USAGE: $0 [--distance zipcode distance_in_miles] [--seller seller] terms
 ";
   exit 1;
 }
+
+sub printable { 
+  my $str = shift; 
+  $str =~ tr/\x80-\xFF//d; 
+  $str =~ tr/\x00-\x1F//d; 
+  return $str; 
+} 
+
 my $eBay = new Net::eBay;
 
-my ($seller, $zip, $distance, $category, $completed, $exclude, $detail, $nobids);
+my ($seller, $zip, $distance, $category, $completed, $exclude, $detail, $nobids, $all, $nobins, $nofeatured, $minprice, $maxprice);
 
 my $done = 0;
 do {
@@ -30,6 +38,22 @@ do {
     $done = 1;
     shift;
     $category = shift;
+  } elsif( $ARGV[0] eq '--minprice' ) {
+    $done = 1;
+    shift;
+    $minprice = shift;
+  } elsif( $ARGV[0] eq '--maxprice' ) {
+    $done = 1;
+    shift;
+    $maxprice = shift;
+  } elsif( $ARGV[0] eq '--nobins' ) {
+    $done = 1;
+    $nobins = 1;
+    shift;
+  } elsif( $ARGV[0] eq '--nofeatured' ) {
+    $done = 1;
+    $nofeatured = 1;
+    shift;
   } elsif( $ARGV[0] eq '--exclude-seller' ) {
     $done = 1;
     shift;
@@ -38,6 +62,10 @@ do {
     $done = 1;
     shift;
     $completed = 1;
+  } elsif( $ARGV[0] eq '--all' ) {
+    $done = 1;
+    shift;
+    $all = 1;
   } elsif( $ARGV[0] eq '--detail' ) {
     $done = 1;
     shift;
@@ -63,20 +91,33 @@ $eBay->setDefaults( { API => 2, debug => 0, compatibility => 415 } );
 
 my $request =
   {
-   Query => $query
+   Query => $query,
+   Pagination => {
+                  EntriesPerPage => 399,
+                  PageNumber => 1,
+                 },
   };
+
+#print STDERR "Query = $query.\n";
 
 if( defined $seller ) {
   $request->{UserIdFilter}->{IncludeSellers} = $seller;
 }
 
 if( defined $exclude ) {
-  $request->{UserIdFilter}->{ExcludeSellers} = $exclude;
+  my @exclude = split( /,/, $exclude );
+  $request->{UserIdFilter}->{ExcludeSellers} = \@exclude;
 }
 
 if( defined $distance && defined $zip ) {
   $request->{ProximitySearch} = { MaxDistance => $distance, PostalCode => $zip };
 }
+
+my $priceFilter = undef;
+$priceFilter->{MinPrice} = $minprice if $minprice;
+$priceFilter->{MaxPrice} = $maxprice if $maxprice;
+
+$request->{PriceRangeFilter} = $priceFilter if $priceFilter;
 
 my $result;
 my $items;
@@ -84,6 +125,8 @@ my $items;
 $request->{CategoryID} = $category if(defined $category); 
 $request->{SearchType} = 'Completed' if(defined $completed); 
 
+$request->{ItemTypeFilter} = 'AllItemTypes' if $all;
+  
 $result = $eBay->submitRequest( "GetSearchResults", $request );
 
 print Dumper( $result ) if $detail;
@@ -110,36 +153,41 @@ if( ref( $result ) eq 'HASH' && defined  $result->{SearchResultItemArray} ) {
 
 $items = $result->{SearchResultItemArray}->{SearchResultItem};
 
+binmode STDOUT, ":utf8";
 
 if( ref $result ) {
   if( $items ) { 
     $items = [$items] if( ref $items eq 'HASH' );
     foreach my $i (@$items) {
       my $item = $i->{Item};
+
+      # Apply extra filters
+      next if $nofeatured && ref $item->{ListingEnhancement};
+      next if $nobins     && $item->{BuyItNowPrice};
+      
       print "$item->{ItemID} ";
-
-
-    my $endtime = $item->{ListingDetails}->{EndTime};
-    $endtime =~ s/T/ /;
-    $endtime =~ s/\.\d\d\d//;
-    $endtime =~ s/Z/ GMT/;
-
-    ############################################################
-    # now figure out ending time in the LOCAL timezone
-    # (not GMT and not necessarily California time)
-    ############################################################
-    my $local_endtime;
-    {
-      my $t1 = DateTime::Precise->new;
-      $t1->set_from_datetime( $endtime );
-      my $epoch = $t1->unix_seconds_since_epoch;
-      my $t2 = DateTime::Precise->new;
-      $t2->set_localtime_from_epoch_time( $epoch );
-      #print "t1=" . $t1->asctime . " ($epoch) -> " . $t2->asctime . ".\n";
-      $local_endtime = $t2->dprintf("%~M %D,%h:%m");
-    }
-
-
+      
+      my $endtime = $item->{ListingDetails}->{EndTime};
+      $endtime =~ s/T/ /;
+      $endtime =~ s/\.\d\d\d//;
+      $endtime =~ s/Z/ GMT/;
+      
+      ############################################################
+      # now figure out ending time in the LOCAL timezone
+      # (not GMT and not necessarily California time)
+      ############################################################
+      my $local_endtime;
+      {
+        my $t1 = DateTime::Precise->new;
+        $t1->set_from_datetime( $endtime );
+        my $epoch = $t1->unix_seconds_since_epoch;
+        my $t2 = DateTime::Precise->new;
+        $t2->set_localtime_from_epoch_time( $epoch );
+        #print "t1=" . $t1->asctime . " ($epoch) -> " . $t2->asctime . ".\n";
+        $local_endtime = $t2->dprintf("%~M %D,%h:%m");
+      }
+      
+      
 
 
       print sprintf( "%2d ", $item->{SellingStatus}->{BidCount} || 0 ) unless $nobids;
@@ -148,7 +196,7 @@ if( ref $result ) {
                    ? $item->{SellingStatus}->{CurrentPrice}
                    : $item->{SellingStatus}->{CurrentPrice}->{content} );
       print sprintf( "%7.2f ", $price );
-      print " $item->{Title} ";
+      print printable( " $item->{Title} " );
       print "\n";
 
     }
