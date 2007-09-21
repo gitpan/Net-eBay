@@ -26,6 +26,7 @@ WriteMakefile(
                             'HTML::TreeBuilder' => 0,
                             'HTML::PrettyPrinter' => 0,
                             'HTML::FormatText' => 0,
+                            'DateTime::Precise' => 0,
                            },
               dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
               clean               => { FILES => 'Net-eBay-*' },
