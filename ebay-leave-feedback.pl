@@ -6,6 +6,7 @@ use warnings;
 use Net::eBay;
 use Data::Dumper;
 use DateTime::Precise;
+use Getopt::Long;
 
 my $usage = "Usage: $0 item-id{,item-id} feedback text\nNote:no spaces between item ids, ONLY COMMAS";
 
@@ -13,12 +14,9 @@ die $usage unless @ARGV;
 
 my ($detail, $debug);
 
-my $done;
-
-do {
-  $done = 0;
-} while( $done );
-
+GetOptions(
+           "debug!" => \$debug,
+           );
 
 my $eBay = new Net::eBay;
 
@@ -60,7 +58,11 @@ foreach my $item ( split( /,/, $items ) ) {
       unless( $fbresult->{Ack} eq 'Success' ) {
         #print Dumper( $fbresult );
         print "Why: $fbresult->{Errors}->{LongMessage}\n";
+      } else {
+        print STDERR "Success! $high_bidder $item <-- $text\n";
       }
+    } else {
+      print STDERR "Item $item not found.\n";
     }
   } else {
     print "Unparsed result: \n$result\n\n";

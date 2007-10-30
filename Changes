@@ -45,3 +45,4 @@ Revision history for Net-eBay
 0.42    Added _last_text variable to have the last original XML response value
 0.43    Changed stuff for new way of specifying pictures when listing items
 0.44    Added dependency on DateTime::Precise
+0.45    Updated listing script to submit picture URL. 

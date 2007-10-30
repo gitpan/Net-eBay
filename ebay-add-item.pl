@@ -261,7 +261,7 @@ if( $picurl ) {
     $args->{Item}->{PictureDetails} = {
                                        GalleryType => 'Gallery',
                                        GalleryURL  => $picurl,
-                                       
+                                       PictureURL => $picurl,
                                       };
   }
 }

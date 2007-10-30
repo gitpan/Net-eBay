@@ -7,4 +7,9 @@ use Net::eBay;
 my $eBay = new Net::eBay;
 $eBay->setDefaults( { API => 2 } );
 
-print "eBay Official time = " . $eBay->officialTime . "\n";
+my $t = $eBay->officialTime;
+
+$t =~ s/T/ /g;
+$t =~ s/Z/ GMT/;
+
+print "eBay Official time = $t\n";
