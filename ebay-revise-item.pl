@@ -13,6 +13,7 @@ my $blockForeignBidders = undef;
 my $call = "ReviseItem";
 my $gallery = undef;
 my $duration = undef;
+my $siteid = 0;
 
 my $item = undef;
 if( -f 'item.txt' ) {
@@ -49,6 +50,7 @@ while( $done ) {
   next if $done = get_argument( 'subtitle', \$subtitle );
   next if $done = get_argument( 'price', \$price );
   next if $done = get_argument( 'quantity', \$quantity );
+  next if $done = get_argument( 'siteid', \$siteid );
   next if $done = get_argument( 'bin', \$bin );
   next if $done = get_argument( 'category', \$category );
   next if $done = get_argument( 'gallery', \$gallery );
@@ -96,6 +98,7 @@ if( $use_descr ) {
 }
 
 my $ebay = new Net::eBay;
+$ebay->setDefaults( { siteid => $siteid, debug => $debug } );
 
 print STDERR "Calling $call...\n";
 

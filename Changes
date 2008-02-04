@@ -46,3 +46,4 @@ Revision history for Net-eBay
 0.43    Changed stuff for new way of specifying pictures when listing items
 0.44    Added dependency on DateTime::Precise
 0.45    Updated listing script to submit picture URL. 
+0.46    Fixed POD coverage; changed some scripts  in a minor way

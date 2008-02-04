@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.45
+Version 0.46
 
 =cut
 
-our $VERSION = '0.45';
+our $VERSION = '0.46';
 
 =head1 SYNOPSIS
 
@@ -452,6 +452,19 @@ sub submitRequest {
 =head2 officialTime
 
 Returns eBay official time
+
+=head2 UTF8
+Internal ONLY function
+
+=head2 hash2xml
+Internal ONLY function
+
+=head2 submitRequestGetText
+Internal ONLY function
+
+=head2 verifyAndPrint
+Internal ONLY function
+
 
 =cut
 

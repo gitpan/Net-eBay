@@ -60,6 +60,11 @@ foreach my $item (@ARGV) {
       print "Result: " . Dumper( $result ) . "\n";
     }
 
+    if( $result->{Errors} ) {
+      print STDERR "Error selecting item $item: $result->{Errors}->{ShortMessage}\n";
+      next;
+    }
+    
     my $high_bidder = $result->{Item}->{SellingStatus}->{HighBidder}->{UserID} || "-- NO BIDS --";
     my $bidcount = "";
     my $c = $result->{Item}->{SellingStatus}->{BidCount};

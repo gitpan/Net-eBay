@@ -12,11 +12,15 @@ my $eBay = new Net::eBay;
 $eBay->setDefaults( { API => 2, debug => 0 } );
 
 my $nowatch = 0;
+my $bidsonly = 0;
 
 while( @ARGV ) {
   if( $ARGV[0] eq '--nowatch' ) {
     shift @ARGV;
     $nowatch = 1;
+  } elsif( $ARGV[0] eq '--bidsonly' ) {
+    shift @ARGV;
+    $bidsonly = 1;
   } else {
     last;
   }
@@ -36,6 +40,10 @@ my $result = $eBay->submitRequest( "GetMyeBaySelling",
 my $watching = 0;
 my $items = 0;
 my $things = 0;
+my $selling = 0;
+my $dollars = 0.0;
+my $disinterest = 0;
+  
 if( ref $result ) {
   #print "Result: " . Dumper( $result ) . "\n";
 
@@ -51,6 +59,8 @@ if( ref $result ) {
       print STDERR "Error! No ItemID!\n" . Dumper( $result ) . "\n\n";
       exit 1;
     }
+
+    next if $bidsonly && !$item->{SellingStatus}->{BidCount};
     
     print "$item->{ItemID} ";
     if( $nowatch ) {
@@ -58,11 +68,22 @@ if( ref $result ) {
     } else {
       print sprintf( "%3d ", $item->{WatchCount} || 0 );
     }
-    $watching += $item->{WatchCount} || 0;
-    print sprintf( "%2d ", $item->{SellingStatus}->{BidCount} || 0 );
-    print sprintf( "%7.2f ", $item->{SellingStatus}->{CurrentPrice}->{content} );
 
+    $disinterest++ if !$item->{WatchCount};
+    
+    $watching += $item->{WatchCount} || 0;
+    my $bidcount = $item->{SellingStatus}->{BidCount};
+    my $curprice = $item->{SellingStatus}->{CurrentPrice}->{content};
     my $q = $item->{Quantity};
+    
+    print sprintf( "%2d ", $bidcount || 0 );
+    print sprintf( "%7.2f ", $curprice );
+
+    if( $bidcount ) {
+      $selling++;
+      $dollars += $q*$curprice;
+    }
+    
     $things += $q;
 
     if( defined $item->{QuantityAvailable} && $item->{QuantityAvailable} != $item->{Quantity} ) {
@@ -76,7 +97,7 @@ if( ref $result ) {
   }
 
   if( !$nowatch ) {
-    print "$count listings, $things things, $result->{SellingSummary}->{AuctionBidCount} bids, $watching watchers\n";
+    print "$count listings, $things things, $result->{SellingSummary}->{AuctionBidCount} bids, $selling will sell, \$$dollars, $watching watchers, $disinterest without interest\n";
   }
 } else {
   print STDERR "Unparsed result: \n$result\n\n";

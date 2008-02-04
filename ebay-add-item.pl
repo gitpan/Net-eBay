@@ -11,6 +11,7 @@
 
 use Net::eBay;
 use Data::Dumper;
+use Cwd;
 
 my $usage = "usage: $0 {options} category minbid name";
 
@@ -150,8 +151,13 @@ $eBay->setDefaults( { API => 2, debug => $debug } );
 
 my $shippingDetails;
 
-if( !defined $shipping && $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
-  $shipping = "+$1"; # flat from auction text
+if( $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
+  my $new_shipping = "+$1"; # flat from auction text
+
+  die "Shipping mismatch: $shipping vs. $new_shipping"
+    if defined $shipping && $shipping && $shipping ne $1;
+  
+  $shipping = $new_shipping;
 }
 
 {
@@ -207,6 +213,16 @@ if( !defined $shipping && $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
   #print STDERR "\n\nShipping $shippingDetails: \n" . Dumper( $shippingDetails ) . "\n";
 
   #exit 0;
+}
+
+# Now verify that the item either has shipping, or is local pickup only, or is freight.
+{
+  my $noship_ok = undef;
+  $noship_ok = 1 if $index =~ /can only be shipped via freight/s;
+  $noship_ok = 1 if $index =~ /Local pickup ONLY/s;
+
+  die "You have not specified shipping cost, local pickup, or freight. Aborting."
+    unless $shipping || $noship_ok;
 }
 
 my $args =
@@ -330,6 +346,16 @@ unless( $fake ) {
   print SAVE "$command\n\n";
   close( SAVE );
   chmod 0755, "relist.sh";
+}
+
+######################################## Bunching
+my $fn = "$ENV{HOME}/.ebay-bunch.sh";
+if( -t STDIN && -f $fn ) {
+  open( BUNCH, ">>$fn" ) || die "Cannot append to $fn";
+  print BUNCH "cd " . getcwd . "; ./relist.sh\n";
+  close( BUNCH );
+  print "Added to bunch $fn.\n";
+  exit( 0 );
 }
 
 my $request = $fake ? "VerifyAddItem" : "AddItem";
