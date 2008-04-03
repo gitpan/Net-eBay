@@ -25,7 +25,7 @@ sub printable {
 
 my $eBay = new Net::eBay;
 
-my ($seller, $zip, $distance, $category, $completed, $exclude, $detail, $nobids, $all, $nobins, $nofeatured, $minprice, $maxprice);
+my ($seller, $zip, $distance, $category, $completed, $exclude, $detail, $nobids, $all, $nobins, $nofeatured, $minprice, $maxprice, $country, $currency );
 
 my $done = 0;
 do {
@@ -46,6 +46,14 @@ do {
     $done = 1;
     shift;
     $maxprice = shift;
+  } elsif( $ARGV[0] eq '--country' ) {
+    $done = 1;
+    shift;
+    $country = shift;
+  } elsif( $ARGV[0] eq '--currency' ) {
+    $done = 1;
+    shift;
+    $currency = shift;
   } elsif( $ARGV[0] eq '--nobins' ) {
     $done = 1;
     $nobins = 1;
@@ -78,7 +86,7 @@ do {
     $done = 1;
     shift;
     $zip = shift || usage "no zipcode";
-    usage "bad zipcode '$zip'" unless $zip =~ /^\d+/;
+    usage "bad zipcode '$zip'" unless $zip =~ /^\w+/;
     $distance = shift || usage "no distance";
     usage "bad distance '$distance'" unless $distance =~ /^\d+/;
   }
@@ -126,7 +134,16 @@ $request->{CategoryID} = $category if(defined $category);
 $request->{SearchType} = 'Completed' if(defined $completed); 
 
 $request->{ItemTypeFilter} = 'AllItemTypes' if $all;
-  
+
+if( $country ) {
+  $request->{SearchLocationFilter} = { CountryCode => $country,
+                                       ItemLocation => "ItemLocatedIn" };
+}
+
+if( $currency ) {
+  $request->{SearchLocationFilter}->{Currency} = $currency;
+}
+
 $result = $eBay->submitRequest( "GetSearchResults", $request );
 
 print Dumper( $result ) if $detail;

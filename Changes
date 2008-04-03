@@ -47,3 +47,5 @@ Revision history for Net-eBay
 0.44    Added dependency on DateTime::Precise
 0.45    Updated listing script to submit picture URL. 
 0.46    Fixed POD coverage; changed some scripts  in a minor way
+0.47    Added more Scripts
+0.48    Changes ebay-search.pl to add --currency and --country

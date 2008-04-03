@@ -13,6 +13,7 @@ my $blockForeignBidders = undef;
 my $call = "ReviseItem";
 my $gallery = undef;
 my $duration = undef;
+my $description = undef;
 my $siteid = 0;
 
 my $item = undef;
@@ -55,6 +56,7 @@ while( $done ) {
   next if $done = get_argument( 'category', \$category );
   next if $done = get_argument( 'gallery', \$gallery );
   next if $done = get_argument( 'duration', \$duration );
+  next if $done = get_argument( 'description', \$description );
   next if $done = get_argument( 'block-foreign-bidders', \$blockForeignBidders );
 
   if( $done = get_argument( 'item', \$item ) ) {
@@ -93,7 +95,7 @@ $request->{Item}->{BuyerRequirements}->{ShipToRegistrationCountry} = $blockForei
 
 if( $use_descr ) {
   die 'no file index.html' unless -f 'index.html';
-  my $descr = `cat index.html`;
+  my $descr = $description || `cat index.html`;
   $request->{Item}->{Description} = "<![CDATA[ $descr ]]>";
 }
 

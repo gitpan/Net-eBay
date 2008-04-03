@@ -177,6 +177,9 @@ if( $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
 
   if( $weight ) {
     # Calculated Rate
+    my $service = "UPSGround";
+    $service = "Freight" if $weight > 150;
+    
     $shippingDetails = {
                         CalculatedShippingRate => {
                                                    OriginatingPostalCode => $zipcode,
@@ -190,7 +193,7 @@ if( $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
                                                    ShippingPackage => 'PackageThickEnvelope',
                                                   },
                         ShippingServiceOptions => {
-                                                   ShippingService => 'UPSGround'
+                                                   ShippingService => $service,
                                                   },
                         ShippingType => 'Calculated',
                        };
