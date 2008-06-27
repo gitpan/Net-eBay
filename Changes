@@ -49,3 +49,4 @@ Revision history for Net-eBay
 0.46    Fixed POD coverage; changed some scripts  in a minor way
 0.47    Added more Scripts
 0.48    Changes ebay-search.pl to add --currency and --country
+0.49    Patches by Michael Hendrick and Tim Keefer. 

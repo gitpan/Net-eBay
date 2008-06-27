@@ -21,11 +21,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.48
+Version 0.49
 
 =cut
 
-our $VERSION = '0.48';
+our $VERSION = '0.49';
 
 =head1 SYNOPSIS
 
@@ -243,19 +243,24 @@ sub new {
 
   $hash->{defaults} = { API => 2, compatibility => 477, timeout => 50 };
   
-  return undef unless verifyAndPrint( defined $hash->{SiteLevel} && $hash->{SiteLevel},
-                                      "SiteLevel must be defined" );
-  
-  if( $hash->{SiteLevel} eq 'prod' ) {
-    $hash->{url} = 'https://api.ebay.com/ws/api.dll';
-    $hash->{public_url} = 'http://cgi.ebay.com/ws/eBayISAPI.dll';
-  } elsif( $hash->{SiteLevel} eq 'dev' ) {
-    $hash->{url} = 'https://api.sandbox.ebay.com/ws/api.dll';
-    $hash->{public_url} = 'http://cgi.sandbox.ebay.com/ws/eBayISAPI.dll';
-  } else {
-    return unless verifyAndPrint( 0, "Parameter SiteLevel is not defined or is wrong: '$hash->{SiteLevel}'" );
-  }
+  if ( ! $hash->{url} ) {
 
+      return undef unless verifyAndPrint( 
+          defined $hash->{SiteLevel} && $hash->{SiteLevel},
+          "SiteLevel must be defined" 
+      );
+      
+      if( $hash->{SiteLevel} eq 'prod' ) {
+        $hash->{url} = 'https://api.ebay.com/ws/api.dll';
+        $hash->{public_url} = 'http://cgi.ebay.com/ws/eBayISAPI.dll';
+      } elsif( $hash->{SiteLevel} eq 'dev' ) {
+        $hash->{url} = 'https://api.sandbox.ebay.com/ws/api.dll';
+        $hash->{public_url} = 'http://cgi.sandbox.ebay.com/ws/eBayISAPI.dll';
+      } else {
+        return unless verifyAndPrint( 0, "Parameter SiteLevel is not defined or is wrong: '$hash->{SiteLevel}'" );
+      }
+  }
+  
   $hash->{siteid} = 0 unless $hash->{siteid};
   
   return undef unless verifyAndPrint( $hash->{DeveloperKey}, "'DeveloperKey' field must be defined with eBay Developer key");

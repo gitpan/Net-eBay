@@ -16,6 +16,14 @@ USAGE: $0 [userid]
 ";
   exit 1;
 }
+
+sub printable {
+  my $str = shift;
+  $str =~ tr/\x80-\xFF//d;
+  $str =~ tr/\x00-\x1F//d;
+  return "$str";
+}
+
 my $eBay = new Net::eBay;
 
 my ($userid);
@@ -82,7 +90,7 @@ if( ref $result ) {
       # when we do not want negs
       next if (!$negs && $i->{CommentType} ne 'Positive' );
       
-      print "$i->{CommentType} $i->{ItemID} " .  sprintf( "%15s", $i->{CommentingUser} ) . " $i->{Role} $i->{CommentText} $title\n";
+      print "$i->{CommentType} $i->{ItemID} " .  sprintf( "%15s", $i->{CommentingUser} ) . " $i->{Role} " . printable( $i->{CommentText} ) . " $title\n";
       #print "\n";
 
       $retcode = 0;

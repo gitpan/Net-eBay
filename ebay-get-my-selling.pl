@@ -69,7 +69,7 @@ if( ref $result ) {
       print sprintf( "%3d ", $item->{WatchCount} || 0 );
     }
 
-    $disinterest++ if !$item->{WatchCount};
+    $disinterest++ if !$item->{WatchCount} && !$item->{SellingStatus}->{BidCount};
     
     $watching += $item->{WatchCount} || 0;
     my $bidcount = $item->{SellingStatus}->{BidCount};
