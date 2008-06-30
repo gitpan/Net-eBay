@@ -15,17 +15,21 @@ use Carp qw( croak );
 
 use vars qw( $_ua );
 
+# find out if compression can be supported
+our $HAS_ZLIB;
+BEGIN { $HAS_ZLIB = eval 'use Compress::Zlib (); 1;' }
+
 =head1 NAME
 
 Net::eBay - Perl Interface to XML based eBay API. 
 
 =head1 VERSION
 
-Version 0.49
+Version 0.50
 
 =cut
 
-our $VERSION = '0.49';
+our $VERSION = '0.50';
 
 =head1 SYNOPSIS
 
@@ -376,6 +380,9 @@ sub submitRequestGetText {
   $req->header( 'Content-Type', 'text/xml' );
   $req->header( 'X-EBAY-API-SESSION-CERTIFICATE', $this->{SessionCertificate} ); 
 
+  # request compressed responses (if we can handle them)
+  $req->header( 'Accept-Encoding', 'gzip' ) if $HAS_ZLIB;
+
   my $xml = "";
   if( $this->{defaults}->{API} == 1 ) {
     $req->header( 'X-EBAY-API-COMPATIBILITY-LEVEL', $this->{defaults}->{compatibility} );
@@ -412,8 +419,8 @@ sub submitRequestGetText {
   $req->content( $xml );
 
   if( $this->{debug} ) {
-    print STDERR "XML:\n$xml\n";
-    print STDERR "Request: " . $req->as_string;
+    warn "XML:\n$xml\n";
+    warn "Request: " . $req->as_string;
   }
 
   my $timeout = $this->{defaults}->{timeout} || 50;
@@ -424,15 +431,15 @@ sub submitRequestGetText {
 
   if ( $res->is_error() ) {
     my $error_msg = $res->status_line();
-    print STDERR "Net::eBay: error making request $name ($error_msg).\n";
+    warn "Net::eBay: error making request $name ($error_msg).\n";
     return undef;
   }
   
   if( $this->{debug} ) {
-    print STDERR "Content (debug of Net::eBay): " . $res->content . "\n";
+    warn "Content (debug of Net::eBay): " . $res->content . "\n";
   }
 
-  return $res->content;
+  return $res->decoded_content;
 }
 
 sub submitRequest {
@@ -452,7 +459,7 @@ sub submitRequest {
   
   return $result if $result;
   
-  print STDERR "Error parsing XML ($@). REF(content) = " . ref( $content ) . " CONTENT=$content\n";
+  warn "Error parsing XML ($@). REF(content) = " . ref( $content ) . " CONTENT=$content\n";
   return $content;
 }
 
@@ -483,7 +490,7 @@ sub officialTime {
     return $result->{Timestamp} if( $this->{defaults}->{API} == 2 );
     croak "Strange, unknown API level '$this->{defaults}->{API}'. bug\n";
   } else {
-    print STDERR "Could not get official time.\n";
+    warn "Could not get official time.\n";
     return undef;
   }
 }
@@ -513,7 +520,7 @@ under the same terms as Perl itself.
 
 sub verifyAndPrint {
   my ($cond, $text) = @_;
-  print STDERR "Error in Net::eBay: $text.\n" unless $cond;
+  warn "Error in Net::eBay: $text.\n" unless $cond;
   return $cond;
 }
 

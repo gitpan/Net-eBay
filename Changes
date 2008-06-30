@@ -50,3 +50,4 @@ Revision history for Net-eBay
 0.47    Added more Scripts
 0.48    Changes ebay-search.pl to add --currency and --country
 0.49    Patches by Michael Hendrick and Tim Keefer. 
+0.50    Patches by Michael Hendrick to enable compression and use of 'warn' instead of print STDERR.
