@@ -26,7 +26,7 @@ my $sitehosted = undef;
 my $shipping   = undef;
 my $zipcode    = "60532";
 my $listingType = undef;
-my $duration   = 7;
+my $duration   = $ENV{DEFAULT_DURATION} || 7;
 my $done = 1;
 
 sub get_argument {

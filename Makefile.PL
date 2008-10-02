@@ -14,6 +14,7 @@ WriteMakefile(
                                      ],
               PREREQ_PM => {
                             'Test::More' => 0,
+                            'Text::Format' => 0,
                             'XML::Simple' => 0,
                             'XML::Dumper' => 0,
                             'Data::Dumper' => 0,

@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Net-eBay
-version:      0.50
+version:      0.51
 version_from: lib/Net/eBay.pm
 installdirs:  site
 requires:
@@ -17,6 +17,7 @@ requires:
     LWP::UserAgent:                0
     Net::SSLeay:                   0
     Test::More:                    0
+    Text::Format:                  0
     XML::Dumper:                   0
     XML::Simple:                   0
 
