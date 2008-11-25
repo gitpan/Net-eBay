@@ -22,6 +22,7 @@ my $siteid     = 0;
 my $fake       = 0;
 my $debug      = 0;
 my $quantity   = 1;
+my $high_fee   = undef;
 my $sitehosted = undef;
 my $shipping   = undef;
 my $zipcode    = "60532";
@@ -57,6 +58,13 @@ while( $done ) {
   if( $ARGV[0] eq '--debug' ) {
     shift @ARGV;
     $debug = 1;
+    $done = 1;
+    next;
+  }
+  
+  if( $ARGV[0] eq '--high_fee' ) {
+    shift @ARGV;
+    $high_fee = 1;
     $done = 1;
     next;
   }
@@ -324,7 +332,10 @@ if( length( $ptitle ) > 55 ) {
   my $total = 0;
   foreach my $fee (@{$verify->{Fees}->{Fee}}) {
     my $amount = $fee->{Fee}->{content};
-    
+
+    if( $fee > 12 && !$high_fee ) {
+      print STDERR "Error, listing fee TOO HIGH and no --high_fee argument. \n";
+    }
     next unless $amount > 0 && $fee->{Name} ne 'ListingFee';
     
     print sprintf( "%16s", $fee->{Name} ) . ": $amount.\n";

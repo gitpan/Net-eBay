@@ -52,3 +52,4 @@ Revision history for Net-eBay
 0.49    Patches by Michael Hendrick and Tim Keefer. 
 0.50    Patches by Michael Hendrick to enable compression and use of 'warn' instead of print STDERR.
 0.51    Added a missing dependency.
+0.52    Patch by Michael Hendrix to make eBay client retry up to 2 times (configurable) in case of connection errors. 

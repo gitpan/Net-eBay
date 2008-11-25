@@ -25,11 +25,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.51
+Version 0.52
 
 =cut
 
-our $VERSION = '0.51';
+our $VERSION = '0.52';
 
 =head1 SYNOPSIS
 
@@ -245,7 +245,12 @@ sub new {
   
   $hash->{siteid} = 0 unless $hash->{siteid};
 
-  $hash->{defaults} = { API => 2, compatibility => 477, timeout => 50 };
+  $hash->{defaults} = {
+      API           => 2,
+      compatibility => 477,
+      timeout       => 50,
+      retries       => 2,
+  };
   
   if ( ! $hash->{url} ) {
 
@@ -298,6 +303,8 @@ supersedes it. All other values are illegal.
 
 * timeout -- sets default query timeout, default is 50 seconds
 
+* retries -- sets the number of times a failed request should be retried.  Defaults to 2 according to L<http://xrl.us/bk7vb>  This only retries requests where eBay is to blame for the failure.  Faulty API requests are not retried.
+
 Example:
 
   $eBay->setDefaults( { API => 2 } ); # use new eBay API
@@ -322,6 +329,8 @@ sub setDefaults {
   $this->{siteid} = $defaults->{siteid} if defined $defaults->{siteid};
   $this->{defaults}->{compatibility} = $defaults->{compatibility} if defined $defaults->{compatibility};
   $this->{defaults}->{timeout} = $defaults->{timeout} if defined $defaults->{timeout};
+  $this->{defaults}->{retries} = $defaults->{retries}
+    if defined $defaults->{retries};
   #print STDERR "Compatibility set to 
 }
 
@@ -426,8 +435,16 @@ sub submitRequestGetText {
   my $timeout = $this->{defaults}->{timeout} || 50;
   $_ua->timeout( $timeout );
 
-  my $res = $_ua->request($req);
-  return undef unless $res;
+  my $retries = 0;
+  my $res;
+  TRY: {
+    $res = $_ua->request($req);
+    return undef unless $res;
+    if ( $res->is_error && $retries < $this->{defaults}{retries} ) {
+        $retries++;
+        redo TRY;
+    }
+  }
 
   if ( $res->is_error() ) {
     my $error_msg = $res->status_line();
