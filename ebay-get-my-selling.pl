@@ -13,6 +13,7 @@ $eBay->setDefaults( { API => 2, debug => 0 } );
 
 my $nowatch = 0;
 my $bidsonly = 0;
+my $highbidders = undef;
 
 while( @ARGV ) {
   if( $ARGV[0] eq '--nowatch' ) {
@@ -21,6 +22,9 @@ while( @ARGV ) {
   } elsif( $ARGV[0] eq '--bidsonly' ) {
     shift @ARGV;
     $bidsonly = 1;
+  } elsif( $ARGV[0] eq '--highbidders' ) {
+    shift @ARGV;
+    $highbidders = 1;
   } else {
     last;
   }
@@ -61,7 +65,7 @@ if( ref $result ) {
     }
 
     next if $bidsonly && !$item->{SellingStatus}->{BidCount};
-    
+
     print "$item->{ItemID} ";
     if( $nowatch ) {
       print "    ";
@@ -79,6 +83,17 @@ if( ref $result ) {
     print sprintf( "%2d ", $bidcount || 0 );
     print sprintf( "%7.2f ", $curprice );
 
+    if( $highbidders ) {
+      my $width = 10;
+      my $highbidder = " " x ($width+0);
+      if( $item->{SellingStatus}->{HighBidder} && $item->{SellingStatus}->{HighBidder}->{UserID} ) {
+        $highbidder = sprintf( "%$width" . "s",
+                               substr( $item->{SellingStatus}->{HighBidder}->{UserID}, 0, $width )
+                             );
+      }
+      print " $highbidder ";
+    }
+    
     if( $bidcount ) {
       $selling++;
       $dollars += $q*$curprice;

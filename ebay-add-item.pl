@@ -25,7 +25,10 @@ my $quantity   = 1;
 my $high_fee   = undef;
 my $sitehosted = undef;
 my $shipping   = undef;
+my $freeonly = undef;
 my $zipcode    = "60532";
+my $handlingtime = 4;
+my $returnpolicy = "No returns unless the auction says otherwise";
 my $listingType = undef;
 my $duration   = $ENV{DEFAULT_DURATION} || 7;
 my $done = 1;
@@ -53,6 +56,9 @@ while( $done ) {
   next if $done = get_argument( 'zipcode', \$zipcode );
   next if $done = get_argument( 'shipping', \$shipping );
   next if $done = get_argument( 'siteid', \$siteid );
+  next if $done = get_argument( 'handlingtime', \$handlingtime );
+  next if $done = get_argument( 'returnpolicy', \$returnpolicy );
+  
   next if $done = get_argument( 'sitehosted', \$sitehosted );
   
   if( $ARGV[0] eq '--debug' ) {
@@ -65,6 +71,13 @@ while( $done ) {
   if( $ARGV[0] eq '--high_fee' ) {
     shift @ARGV;
     $high_fee = 1;
+    $done = 1;
+    next;
+  }
+  
+  if( $ARGV[0] eq '--freeonly' ) {
+    shift @ARGV;
+    $freeonly = 1;
     $done = 1;
     next;
   }
@@ -248,6 +261,8 @@ my $args =
       Description => "<![CDATA[ $index ]]>", 
       ListingDuration => "Days_$duration",
       Location => "Lisle, IL",
+      DispatchTimeMax => $handlingtime,
+      ReturnPolicy => { Description => $returnpolicy, ReturnsAccepted => $returnpolicy, ReturnsAcceptedOption => "ReturnsNotAccepted" },
       PostalCode => $zipcode,
       PaymentMethods => [ 'PayPal', 'Other', 'CashOnPickup', 'MOCC'],
       PayPalEmailAddress => 'ichudov@algebra.com',
@@ -333,8 +348,14 @@ if( length( $ptitle ) > 55 ) {
   foreach my $fee (@{$verify->{Fees}->{Fee}}) {
     my $amount = $fee->{Fee}->{content};
 
-    if( $fee > 12 && !$high_fee ) {
-      print STDERR "Error, listing fee TOO HIGH and no --high_fee argument. \n";
+    if( $amount && $freeonly ) {
+      print STDERR "ERROR, --freeonly specified but fees are not zero\n";
+      exit 1;
+    }
+    
+    if( $amount > 12 && !$high_fee ) {
+      print STDERR "Error, listing fee '$fee->{Name}' is $amount, TOO HIGH and no --high_fee argument. \n";
+      exit 1;
     }
     next unless $amount > 0 && $fee->{Name} ne 'ListingFee';
     
@@ -356,9 +377,10 @@ if( !$fake && -t STDIN ) {
 
 
 unless( $fake ) {
-  open( SAVE, ">relist.sh" );
+  open( SAVE, ">relist.sh.new" );
   print SAVE "$command\n\n";
   close( SAVE );
+  rename "relist.sh.new", "relist.sh";
   chmod 0755, "relist.sh";
 }
 

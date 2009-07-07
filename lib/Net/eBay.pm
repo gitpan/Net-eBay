@@ -25,11 +25,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.52
+Version 0.53
 
 =cut
 
-our $VERSION = '0.52';
+our $VERSION = '0.53';
 
 =head1 SYNOPSIS
 
@@ -414,9 +414,29 @@ sub submitRequestGetText {
     $xml = "
 <?xml version='1.0' encoding='utf-8'?>
  <$name"."Request xmlns=\"urn:ebay:apis:eBLBaseComponents\">
- <RequesterCredentials>
-   <eBayAuthToken>$this->{Token}</eBayAuthToken>
- </RequesterCredentials>
+ <RequesterCredentials>\n";
+ #if request credentials exist, use the username/password
+ if(defined $request->{RequesterCredentials}) { 
+   
+   #if username or password is not defined, we can't use request credentials
+   if(not defined $request->{RequesterCredentials}{Username} or
+      not defined $request->{RequesterCredentials}{Password}) {
+     croak "Username or Password missing when using RequesterCredentials\n";
+   }
+   
+   #add to the request header
+   $xml .= "  <Username>$request->{RequesterCredentials}{Username}</Username>\n" .
+           "  <Password>$request->{RequesterCredentials}{Password}</Password>\n";
+
+   #delete from our request beceause we don't actually want to include a request credentials
+   #node within our api call
+   delete $request->{RequesterCredentials};
+
+ } else {
+   $xml .= "  <eBayAuthToken>$this->{Token}</eBayAuthToken>\n";
+ }
+ 
+ $xml .= "</RequesterCredentials>
 " . hash2xml( 2, $request ) . "
 </$name"."Request>
 ";

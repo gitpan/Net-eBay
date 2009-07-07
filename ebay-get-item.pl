@@ -109,6 +109,9 @@ foreach my $item (@ARGV) {
       $info .= " $hb->{BuyerInfo}->{ShippingAddress}->{PostalCode}, $hb->{BuyerInfo}->{ShippingAddress}->{Country}"
         if defined $hb->{BuyerInfo}->{ShippingAddress}->{PostalCode} && defined $hb->{BuyerInfo}->{ShippingAddress}->{Country};
 
+      if( defined $hb->{FeedbackScore} && defined $hb->{PositiveFeedbackPercent} ) {
+        $info .= ", $hb->{FeedbackScore}\@$hb->{PositiveFeedbackPercent}\%";
+      }
       $info = "($info)" if $info;
     }
 
