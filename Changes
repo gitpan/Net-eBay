@@ -54,3 +54,4 @@ Revision history for Net-eBay
 0.51    Added a missing dependency.
 0.52    Patch by Michael Hendrix to make eBay client retry up to 2 times (configurable) in case of connection errors. 
 0.53    Added support for return policy in my sample listing script
+0.54    Refined listing script to reflect a "no foreign sales" polify.

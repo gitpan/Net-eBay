@@ -29,6 +29,7 @@ my $freeonly = undef;
 my $zipcode    = "60532";
 my $handlingtime = 4;
 my $returnpolicy = "No returns unless the auction says otherwise";
+my $returnsaccepted = "ReturnsNotAccepted";
 my $listingType = undef;
 my $duration   = $ENV{DEFAULT_DURATION} || 7;
 my $done = 1;
@@ -57,6 +58,7 @@ while( $done ) {
   next if $done = get_argument( 'shipping', \$shipping );
   next if $done = get_argument( 'siteid', \$siteid );
   next if $done = get_argument( 'handlingtime', \$handlingtime );
+  next if $done = get_argument( 'returnsaccepted', \$returnsaccepted );
   next if $done = get_argument( 'returnpolicy', \$returnpolicy );
   
   next if $done = get_argument( 'sitehosted', \$sitehosted );
@@ -260,9 +262,28 @@ my $args =
       Currency => "USD",
       Description => "<![CDATA[ $index ]]>", 
       ListingDuration => "Days_$duration",
+      'BuyerRequirements' => {
+                              'MaximumUnpaidItemStrikes' => 'true',
+                              'ShipToRegistrationCountry' => 'true',
+                              'MinimumFeedbackScore' => '-1'
+                             },
+      BuyerRequirementDetails => {
+                                  MaximumUnpaidItemStrikesInfo => {
+                                                                   Count => 1,
+                                                                   Period => Days_180,
+                                                                   },
+                                  ShipToRegistrationCountry => 1,
+                                  VerifiedUser => 1,
+                                  VerifiedUserRequirements => {
+                                                               MinimumFeedbackScore => 2,
+                                                              }
+                                  },
       Location => "Lisle, IL",
       DispatchTimeMax => $handlingtime,
-      ReturnPolicy => { Description => $returnpolicy, ReturnsAccepted => $returnpolicy, ReturnsAcceptedOption => "ReturnsNotAccepted" },
+      ReturnPolicy => { Description => $returnpolicy,
+                        ReturnsAccepted => $returnpolicy,
+                        ReturnsAcceptedOption => $returnsaccepted,
+                      },
       PostalCode => $zipcode,
       PaymentMethods => [ 'PayPal', 'Other', 'CashOnPickup', 'MOCC'],
       PayPalEmailAddress => 'ichudov@algebra.com',
