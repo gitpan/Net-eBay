@@ -146,6 +146,7 @@ if( $currency ) {
 
 $result = $eBay->submitRequest( "GetSearchResults", $request );
 
+print Dumper( $request ) if $detail;
 print Dumper( $result ) if $detail;
 
 #print STDERR "Before: Ref( result ) = " . ref( $result ) . ".\n";
@@ -213,8 +214,9 @@ if( ref $result ) {
                    ? $item->{SellingStatus}->{CurrentPrice}
                    : $item->{SellingStatus}->{CurrentPrice}->{content} );
       print sprintf( "%7.2f ", $price );
-      print printable( " $item->{Title} " );
-      print "\n";
+      print printable( sprintf( " %-58s", $item->{Title} ) );
+      my $url = "http://ef.algebra.com/e/$item->{ItemID}";
+      print "   $url\n";
 
     }
   } else {

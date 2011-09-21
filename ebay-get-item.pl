@@ -53,6 +53,7 @@ foreach my $item (@ARGV) {
                                      {
                                       ItemID => $item,
                                       DetailLevel => $description ? "ReturnAll" : "ItemReturnAttributes",
+                                      # DetailLevel => "ReturnAll",
                                      }
                                    );
   if( ref $result ) {

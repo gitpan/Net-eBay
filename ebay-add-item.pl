@@ -185,58 +185,68 @@ if( $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
 
 {
   my $s = $shipping;
-  my $weight = undef;
-  $weight = $1 if $s =~ s/^(\d+)//;
-
-  my ($d1, $d2, $d3) = (12, 12, 12);
-  ($d1, $d2, $d3) = ($1, $2, $3) if $weight && $s =~ s/^-(\d+)x(\d+)x(\d+)//;
-
-  my $handling = 0;
-  $handling = $1 if $s =~ s/^\+(\d+(\.\d+)?)//;
-
-  print STDERR "SHIPPING: Weight = $weight, dimensions = $d1-$d2-$d3, handling = $handling.\n";
-
-  die "Incorrectly specified shipping '$shipping' => '$s'" unless $s eq "";
-
-  if( $weight ) {
-    # Calculated Rate
-    my $service = "UPSGround";
-    $service = "Freight" if $weight > 150;
-    
+  if ( $shipping eq 'local' ) {
     $shippingDetails = {
-                        CalculatedShippingRate => {
-                                                   OriginatingPostalCode => $zipcode,
-                                                   PackageDepth => $d1,
-                                                   PackageLength => $d2,
-                                                   PackageWidth => $d3,
-                                                   PackagingHandlingCosts => { _attributes => { currencyID => 'USD' },
-                                                                               _value => $handling
-                                                                             },
-                                                   WeightMajor => $weight,
-                                                   ShippingPackage => 'PackageThickEnvelope',
-                                                  },
                         ShippingServiceOptions => {
-                                                   ShippingService => $service,
+                                                   ShippingService => "Pickup",
+                                                   #ShippingServiceID => 150,
                                                   },
-                        ShippingType => 'Calculated',
+                        ShippingType => 'Pickup',
                        };
   } else {
-    # Flat Rate
-    #
-    # If handling is not specified, no shipping details will be provided!
-    #
-    if( $handling ) {
+    my $weight = undef;
+    $weight = $1 if $s =~ s/^(\d+)//;
+    
+    my ($d1, $d2, $d3) = (12, 12, 12);
+    ($d1, $d2, $d3) = ($1, $2, $3) if $weight && $s =~ s/^-(\d+)x(\d+)x(\d+)//;
+    
+    my $handling = 0;
+    $handling = $1 if $s =~ s/^\+(\d+(\.\d+)?)//;
+    
+    print STDERR "SHIPPING: Weight = $weight, dimensions = $d1-$d2-$d3, handling = $handling.\n";
+    
+    die "Incorrectly specified shipping '$shipping' => '$s'" unless $s eq "";
+    
+    if( $weight ) {
+      # Calculated Rate
+      my $service = "UPSGround";
+      $service = "Freight" if $weight > 150;
+      
       $shippingDetails = {
-                          ShippingServiceOptions => {
-                                                     ShippingService => 'Other',
-                                                     ShippingServiceCost => $handling
+                          CalculatedShippingRate => {
+                                                     OriginatingPostalCode => $zipcode,
+                                                     PackageDepth => $d1,
+                                                     PackageLength => $d2,
+                                                     PackageWidth => $d3,
+                                                     PackagingHandlingCosts => { _attributes => { currencyID => 'USD' },
+                                                                                 _value => $handling
+                                                                               },
+                                                     WeightMajor => $weight,
+                                                     ShippingPackage => 'PackageThickEnvelope',
                                                     },
-                          ShippingType => 'Flat',
+                          ShippingServiceOptions => {
+                                                     ShippingService => $service,
+                                                    },
+                          ShippingType => 'Calculated',
                          };
-    } 
+    } else {
+      # Flat Rate
+      #
+      # If handling is not specified, no shipping details will be provided!
+      #
+      if( $handling ) {
+        $shippingDetails = {
+                            ShippingServiceOptions => {
+                                                       ShippingService => 'Other',
+                                                       ShippingServiceCost => $handling
+                                                      },
+                            ShippingType => 'Flat',
+                           };
+      } 
+    }
   }
   
-  #print STDERR "\n\nShipping $shippingDetails: \n" . Dumper( $shippingDetails ) . "\n";
+  print STDERR "\n\nShipping $shippingDetails: \n" . Dumper( $shippingDetails ) . "\n";
 
   #exit 0;
 }
@@ -260,6 +270,7 @@ my $args =
       Title => $ptitle,
       Country => "US",
       Currency => "USD",
+      ConditionID => 3000,
       Description => "<![CDATA[ $index ]]>", 
       ListingDuration => "Days_$duration",
       'BuyerRequirements' => {
@@ -269,10 +280,10 @@ my $args =
                              },
       BuyerRequirementDetails => {
                                   MaximumUnpaidItemStrikesInfo => {
-                                                                   Count => 1,
+                                                                   Count => 3,
                                                                    Period => Days_180,
                                                                    },
-                                  ShipToRegistrationCountry => 1,
+                                  ShipToRegistrationCountry => true,
                                   VerifiedUser => 1,
                                   VerifiedUserRequirements => {
                                                                MinimumFeedbackScore => 2,
@@ -285,7 +296,7 @@ my $args =
                         ReturnsAcceptedOption => $returnsaccepted,
                       },
       PostalCode => $zipcode,
-      PaymentMethods => [ 'PayPal', 'Other', 'CashOnPickup', 'MOCC'],
+      PaymentMethods => [ 'PayPal', 'CashOnPickup'],
       PayPalEmailAddress => 'ichudov@algebra.com',
       PrimaryCategory => {
                           CategoryID => [ split( /,/, $category ) ]
@@ -364,6 +375,8 @@ if( length( $ptitle ) > 55 ) {
 
 {
   my $verify = $eBay->submitRequest( 'VerifyAddItem', $args );
+
+  print Dumper( $verify ) if $debug;
   
   my $total = 0;
   foreach my $fee (@{$verify->{Fees}->{Fee}}) {
@@ -390,6 +403,8 @@ if( length( $ptitle ) > 55 ) {
     exit 1;
   }
 }
+
+exit 0 if $debug;
 
 if( !$fake && -t STDIN ) {
   print "Press Enter to continue:\n";

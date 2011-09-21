@@ -51,7 +51,7 @@ my $disinterest = 0;
 if( ref $result ) {
   #print "Result: " . Dumper( $result ) . "\n";
 
-  print "   Item        W  B   Price Q   Title\n";
+  print "   Item        W  B   Price     Bidder  Q   Title\n";
   #      7551933377   0  0   49.99 1 Siliconix Transistor tester IPT II 2 Monitor
 
   my $items = $result->{ActiveList}->{ItemArray}->{Item};
@@ -112,7 +112,7 @@ if( ref $result ) {
   }
 
   if( !$nowatch ) {
-    print "$count listings, $things things, $result->{SellingSummary}->{AuctionBidCount} bids, $selling will sell, \$$dollars, $watching watchers, $disinterest without interest\n";
+    print "$count listings, $things things, $selling will sell, \$$dollars, $watching watchers, $disinterest without interest\n";
   }
 } else {
   print STDERR "Unparsed result: \n$result\n\n";

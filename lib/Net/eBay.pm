@@ -25,11 +25,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.54
+Version 0.55
 
 =cut
 
-our $VERSION = '0.54';
+our $VERSION = '0.55';
 
 =head1 SYNOPSIS
 
@@ -247,7 +247,7 @@ sub new {
 
   $hash->{defaults} = {
       API           => 2,
-      compatibility => 477,
+      compatibility => 655,
       timeout       => 50,
       retries       => 2,
   };
@@ -484,6 +484,8 @@ sub submitRequest {
   my ($this) = @_;
   
   my $content = submitRequestGetText( @_ );
+
+  $this->{last_result_xml} = $content;
   
   $@ = "";
   my $result = undef;
