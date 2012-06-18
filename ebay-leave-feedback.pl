@@ -23,6 +23,8 @@ my $eBay = new Net::eBay;
 # use new eBay API
 $eBay->setDefaults( { API => 2, debug => $debug } );
 
+my $exitcode = 0;
+
 my $items = shift @ARGV || die $usage;
 
 foreach my $item ( split( /,/, $items ) ) {
@@ -40,9 +42,9 @@ foreach my $item ( split( /,/, $items ) ) {
     if( $debug ) {
       print "Result: " . Dumper( $result ) . "\n";
     }
-    
+
     my $high_bidder = $result->{Item}->{SellingStatus}->{HighBidder}->{UserID};
-    
+
     if( $high_bidder ) {
       my $fb = {
                 ItemID => $item,
@@ -50,14 +52,23 @@ foreach my $item ( split( /,/, $items ) ) {
                 CommentType => 'Positive',
                 CommentText => $text
                };
-      
-      my $fbresult = $eBay->submitRequest( "LeaveFeedback",
-                                           $fb );
-      
+
+      my $fbresult = $eBay->submitRequest( "LeaveFeedback", $fb );
+
       print "$item ($result->{Item}->{Title}): $fbresult->{Ack}\n";
       unless( $fbresult->{Ack} eq 'Success' ) {
         #print Dumper( $fbresult );
-        print "Why: $fbresult->{Errors}->{LongMessage}\n";
+        my $msg = $fbresult->{Errors}->{LongMessage};
+        print "Why: $msg\n";
+        if ( $msg =~ /Transaction ID is required/ ) {
+          print STDERR "Feedback for multiple quantity items is not supported.\n";
+          $exitcode = 0;
+        } elsif ( $msg =~ /or the feedback has been left already/ ) {
+          print STDERR "You already left feedback for this transaction.\n";
+          $exitcode = 1;
+        } else {
+          $exitcode = 1;
+        }
       } else {
         print STDERR "Success! $high_bidder $item <-- $text\n";
       }
@@ -68,3 +79,5 @@ foreach my $item ( split( /,/, $items ) ) {
     print "Unparsed result: \n$result\n\n";
   }
 }
+
+exit $exitcode;

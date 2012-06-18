@@ -9,6 +9,7 @@
 # weight). Use it as a guide to write your own scripts, no more. 
 #
 
+use IgorBusinessRules;
 use Net::eBay;
 use Data::Dumper;
 use Cwd;
@@ -26,7 +27,7 @@ my $high_fee   = undef;
 my $sitehosted = undef;
 my $shipping   = undef;
 my $freeonly = undef;
-my $zipcode    = "60532";
+my $zipcode    = "60163";
 my $handlingtime = 4;
 my $returnpolicy = "No returns unless the auction says otherwise";
 my $returnsaccepted = "ReturnsNotAccepted";
@@ -113,6 +114,9 @@ my $name = join( " ", @ARGV) || die $usage;
 my $ptitle = $name;
 $ptitle =~ s/\"/\\\"/g;
 
+die "Inventory number in form INV=XXXX is required"
+  unless $ptitle =~ /INV=\d+\b/;
+
 ###################################################################### Check args
 if( defined $listingType ) {
   my $legal = {
@@ -167,7 +171,7 @@ $eBay->setDefaults( { API => 2, debug => $debug } );
 #
 #    70-12x22x13+15 -- 70 lbs, 12x22x13 in, 15 dollars handling
 #    +15            -- $15 fixed fee
-#    40+15          -- no size (default 12x12x12_
+#    40+15          -- no size (default 12x12x12_-- DISABLED to due to mistakes)
 #
 # Note that I use UPS ground only as my shipping method
 #
@@ -185,33 +189,66 @@ if( $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
 
 {
   my $s = $shipping;
+  my $additional = undef;
   if ( $shipping eq 'local' ) {
     $shippingDetails = {
                         ShippingServiceOptions => {
-                                                   ShippingService => "Pickup",
+                                                   ShippingService => "LocalDelivery",
+                                                   FreeShipping => 'true',
                                                    #ShippingServiceID => 150,
                                                   },
-                        ShippingType => 'Pickup',
+                        #ShippingType => 'Flat',
+                       };
+  } elsif ( $shipping eq 'free' ) {
+    $shippingDetails = {
+                        ShippingServiceOptions => {
+                                                   ShippingService => "Other",
+                                                   FreeShipping => 'true',
+                                                  },
+                        ShippingType => 'Flat',
+                       };
+  } elsif ( $shipping eq 'freight' ) {
+    $shippingDetails = {
+                        ShippingServiceOptions => {
+                                                   ShippingService => "FreightShipping",
+                                                  },
+                        ShippingType => 'FreightFlat',
                        };
   } else {
     my $weight = undef;
+    my $isflatrate = undef;
+
     $weight = $1 if $s =~ s/^(\d+)//;
-    
-    my ($d1, $d2, $d3) = (12, 12, 12);
-    ($d1, $d2, $d3) = ($1, $2, $3) if $weight && $s =~ s/^-(\d+)x(\d+)x(\d+)//;
-    
+
+    my ($d1, $d2, $d3);
+
+    if ( $weight && $s =~ s/^-(\d+)x(\d+)x(\d+)// ) {
+      ($d1, $d2, $d3) = ($1, $2, $3);
+    }
     my $handling = 0;
     $handling = $1 if $s =~ s/^\+(\d+(\.\d+)?)//;
-    
-    print STDERR "SHIPPING: Weight = $weight, dimensions = $d1-$d2-$d3, handling = $handling.\n";
-    
+
+
+    if ( $s =~ s/^\@(\d+(\.\d+)?)// ) {
+      $additional = $1;
+    }
+
+    print STDERR "SHIPPING: Weight = $weight, dimensions = $d1-$d2-$d3, handling = $handling, Additional Shipping is $additional.\n";
+
     die "Incorrectly specified shipping '$shipping' => '$s'" unless $s eq "";
-    
+
+    if ( $s =~ s/^\@(\d+(\.\d+)?)// ) {
+      $additional = $1;
+    }
+
     if( $weight ) {
       # Calculated Rate
       my $service = "UPSGround";
       $service = "Freight" if $weight > 150;
-      
+
+      unless ( $d1 && $d2 && d3 ) {
+        die "Shipping dimensions not specified.";
+      }
       $shippingDetails = {
                           CalculatedShippingRate => {
                                                      OriginatingPostalCode => $zipcode,
@@ -234,6 +271,7 @@ if( $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
       #
       # If handling is not specified, no shipping details will be provided!
       #
+      $isflatrate = 1;
       if( $handling ) {
         $shippingDetails = {
                             ShippingServiceOptions => {
@@ -244,9 +282,18 @@ if( $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
                            };
       } 
     }
+    if ( defined $additional ) {
+      $shippingDetails->{ShippingServiceOptions}->{ShippingServiceAdditionalCost} = $additional;
+    }
+
+    # Business rule check
+    if ( $isflatrate && $quantity > 1 && !defined $additional ) {
+      print "\n\b*** WARNING *** Please provide additional cost!\n";
+      exit 1;
+    }
   }
-  
-  print STDERR "\n\nShipping $shippingDetails: \n" . Dumper( $shippingDetails ) . "\n";
+
+  #print STDERR "\n\nShipping $shippingDetails: \n" . Dumper( $shippingDetails ) . "\n";
 
   #exit 0;
 }
@@ -261,6 +308,17 @@ if( $index =~ /FIXED_SHIPPING_COST=(\d+(\.\d*)?)/ ) {
     unless $shipping || $noship_ok;
 }
 
+my $listingDuration = undef;
+
+if ( $listingType eq 'FixedPriceItem' ) {
+  $listingDuration = 'GTC';
+} else {
+  $listingDuration = "Days_$duration";
+}
+
+my $condition = 3000; # Used
+$condition = 1500 if $ptitle =~ /^NEW,/i;
+
 my $args =
   {
      Item =>
@@ -270,9 +328,10 @@ my $args =
       Title => $ptitle,
       Country => "US",
       Currency => "USD",
-      ConditionID => 3000,
+      ConditionID => $condition,
+      UseTaxTable => 'true',
       Description => "<![CDATA[ $index ]]>", 
-      ListingDuration => "Days_$duration",
+      ListingDuration => $listingDuration,
       'BuyerRequirements' => {
                               'MaximumUnpaidItemStrikes' => 'true',
                               'ShipToRegistrationCountry' => 'true',
@@ -289,7 +348,7 @@ my $args =
                                                                MinimumFeedbackScore => 2,
                                                               }
                                   },
-      Location => "Lisle, IL",
+      Location => "Berkeley, IL",
       DispatchTimeMax => $handlingtime,
       ReturnPolicy => { Description => $returnpolicy,
                         ReturnsAccepted => $returnpolicy,
@@ -297,7 +356,7 @@ my $args =
                       },
       PostalCode => $zipcode,
       PaymentMethods => [ 'PayPal', 'CashOnPickup'],
-      PayPalEmailAddress => 'ichudov@algebra.com',
+      PayPalEmailAddress => 'ichudov@gmail.com',
       PrimaryCategory => {
                           CategoryID => [ split( /,/, $category ) ]
                          },
@@ -316,6 +375,15 @@ $args->{Item}->{ListingType} = $listingType if defined $listingType;
 
 if( $shippingDetails ) {
   $args->{Item}->{ShippingDetails} = $shippingDetails;
+}
+
+if ( $listingType eq 'FixedPriceItem' ) {
+  $args->{Item}->{BestOfferDetails}->{BestOfferEnabled} = 'true';
+  $args->{Item}->{ListingDetails} =
+    {
+     BestOfferAutoAcceptPrice => sprintf( "%.2f", $minimumBid * igor_ebay_min_autoaccept_factor ),
+     MinimumBestOfferPrice    => sprintf( "%.2f", $minimumBid * igor_ebay_max_autoreject_factor ),
+    };
 }
 
 if( defined $subtitle ) {
@@ -351,13 +419,13 @@ print "
                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Title:    $ptitle
-            ####################################################### (" . length( $ptitle ) . "/55)
+            ################################################################################ (" . length( $ptitle ) . "/80)
 ";
 
 if( $subtitle ) {
   print "
   SubTitle: $subtitle
-            ####################################################### (" . length( $subtitle ) . "/55)
+            ################################################################################ (" . length( $subtitle ) . "/80)
 ";
 }
 
@@ -368,7 +436,7 @@ print "
   Shipping      : $shipping
 ";
 
-if( length( $ptitle ) > 55 ) {
+if( length( $ptitle ) > 80 ) {
   print STDERR "Error, title too long.\n";
   exit;
 }
@@ -422,7 +490,7 @@ unless( $fake ) {
 
 ######################################## Bunching
 my $fn = "$ENV{HOME}/.ebay-bunch.sh";
-if( -t STDIN && -f $fn ) {
+if( -t STDIN && -f $fn && ($listingDuration ne 'GTC' || $ENV{BUNCH_ALL_EBAY_LISTINGS}) ) {
   open( BUNCH, ">>$fn" ) || die "Cannot append to $fn";
   print BUNCH "cd " . getcwd . "; ./relist.sh\n";
   close( BUNCH );
@@ -465,7 +533,9 @@ Your item was listed:
 TOTAL FEE: $total
 
 ";
-    system( "check-ebay-activity.sh reset & " );
+    unless ( $listingType eq 'FixedPriceItem' ) {
+      system( "bash -i -c 'ms bash -i -c reset-ebay' " );
+    }
 
     if( open( ANN, ">annotation.txt" ) ) {
       print ANN $ptitle;

@@ -26,7 +26,7 @@ my $result = $eBay->submitRequest( "GetMyeBaySelling",
                                     $kind => {
                                                    Sort => 'EndTime',
                                                    Pagination => {
-                                                                  EntriesPerPage => 100,
+                                                                  EntriesPerPage => 199,
                                                                   PageNumber => 1
                                                                  }
                                                   }

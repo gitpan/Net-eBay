@@ -31,11 +31,13 @@ my ($userid);
 my $count = 25;
 my $filter = undef;
 my $negs = 1;
+my $detail = undef;
 
 GetOptions(
-           "count=i" => \$count,
+           "count=i"  => \$count,
            "filter=s" => \$filter,
-           "negs!", \$negs
+           "negs!"    => \$negs,
+           "detail!"  => \$detail,
           );
 
 $userid = shift;
@@ -65,7 +67,7 @@ if( ref $result ) {
     foreach my $i (@$items) {
       last if $count-- <= 0;
       
-      #print Dumper( $i );
+      print Dumper( $i ) if $detail;
       next if $filter && (!defined( $i->{ItemTitle} ) || ($i->{ItemTitle} !~ /$filter/i ));
         
       if( 0 ) {

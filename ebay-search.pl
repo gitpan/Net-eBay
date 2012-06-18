@@ -99,38 +99,42 @@ $eBay->setDefaults( { API => 2, debug => 0, compatibility => 415 } );
 
 my $request =
   {
-   Query => $query,
    Pagination => {
                   EntriesPerPage => 399,
                   PageNumber => 1,
                  },
   };
 
+$request->{keywords} = $query if $query;
+
 #print STDERR "Query = $query.\n";
 
+sub addItemFilter {
+  my ($request, $filterName, $filterValue) = @_;
+  push @{$request->{itemFilter}}, { name => $filterName, value => $filterValue };
+}
+
+
 if( defined $seller ) {
-  $request->{UserIdFilter}->{IncludeSellers} = $seller;
+  addItemFilter( $request, 'Seller', $seller );
 }
 
 if( defined $exclude ) {
   my @exclude = split( /,/, $exclude );
-  $request->{UserIdFilter}->{ExcludeSellers} = \@exclude;
+  foreach my $x (@exclude) {
+    addItemFilter( $request, 'ExcludeSeller', $x );
+  }
 }
 
 if( defined $distance && defined $zip ) {
-  $request->{ProximitySearch} = { MaxDistance => $distance, PostalCode => $zip };
+  $request->{buyerPostalCode} = $zip;
+  addItemFilter( $request, 'MaxDistance', $distance );
 }
 
-my $priceFilter = undef;
-$priceFilter->{MinPrice} = $minprice if $minprice;
-$priceFilter->{MaxPrice} = $maxprice if $maxprice;
+addItemFilter( $request, 'MinPrice', $minprice ) if $minprice;
+addItemFilter( $request, 'MaxPrice', $minprice ) if $maxprice;
 
-$request->{PriceRangeFilter} = $priceFilter if $priceFilter;
-
-my $result;
-my $items;
-
-$request->{CategoryID} = $category if(defined $category); 
+$request->{categoryID} = $category if(defined $category); 
 $request->{SearchType} = 'Completed' if(defined $completed); 
 
 $request->{ItemTypeFilter} = 'AllItemTypes' if $all;
@@ -144,7 +148,10 @@ if( $currency ) {
   $request->{SearchLocationFilter}->{Currency} = $currency;
 }
 
-$result = $eBay->submitRequest( "GetSearchResults", $request );
+my $result;
+my $items;
+
+$result = $eBay->submitFindingRequest( "findItemsAdvanced", $request );
 
 print Dumper( $request ) if $detail;
 print Dumper( $result ) if $detail;
@@ -153,7 +160,7 @@ print Dumper( $result ) if $detail;
 
 my $exitcode;
 
-if( ref( $result ) eq 'HASH' && defined  $result->{SearchResultItemArray} ) {
+if( ref( $result ) eq 'HASH' && defined  $result->{searchResult} ) {
   $exitcode = 0; # good
   #print STDERR "Good results, ref = " . ref( $result ) . ", keys = " . join( ',', keys %$result ) . ".\n";
 } else {
@@ -169,23 +176,22 @@ if( ref( $result ) eq 'HASH' && defined  $result->{SearchResultItemArray} ) {
   }
 }
 
-$items = $result->{SearchResultItemArray}->{SearchResultItem};
+$items = $result->{searchResult}->{item};
 
 binmode STDOUT, ":utf8";
 
 if( ref $result ) {
   if( $items ) { 
     $items = [$items] if( ref $items eq 'HASH' );
-    foreach my $i (@$items) {
-      my $item = $i->{Item};
+    foreach my $item (@$items) {
 
       # Apply extra filters
       next if $nofeatured && ref $item->{ListingEnhancement};
       next if $nobins     && $item->{BuyItNowPrice};
       
-      print "$item->{ItemID} ";
+      print "$item->{itemId} ";
       
-      my $endtime = $item->{ListingDetails}->{EndTime};
+      my $endtime = $item->{listingInfo}->{endTime};
       $endtime =~ s/T/ /;
       $endtime =~ s/\.\d\d\d//;
       $endtime =~ s/Z/ GMT/;
@@ -204,18 +210,15 @@ if( ref $result ) {
         #print "t1=" . $t1->asctime . " ($epoch) -> " . $t2->asctime . ".\n";
         $local_endtime = $t2->dprintf("%~M %D,%h:%m");
       }
-      
-      
 
-
-      print sprintf( "%2d ", $item->{SellingStatus}->{BidCount} || 0 ) unless $nobids;
+      print sprintf( "%2d ", $item->{sellingStatus}->{bidCount} || 0 ) unless $nobids;
       print sprintf( "%25s ", $local_endtime );
       my $price = (0 &&defined $category
-                   ? $item->{SellingStatus}->{CurrentPrice}
-                   : $item->{SellingStatus}->{CurrentPrice}->{content} );
+                   ? $item->{sellingStatus}->{currentPrice}
+                   : $item->{sellingStatus}->{currentPrice}->{content} );
       print sprintf( "%7.2f ", $price );
-      print printable( sprintf( " %-58s", $item->{Title} ) );
-      my $url = "http://ef.algebra.com/e/$item->{ItemID}";
+      print printable( sprintf( " %-58s", $item->{title} ) );
+      my $url = "http://ef.algebra.com/e/$item->{itemId}";
       print "   $url\n";
 
     }

@@ -11,9 +11,10 @@ my $eBay = new Net::eBay;
 # use new eBay API
 $eBay->setDefaults( { API => 2, debug => 0 } );
 
-my $nowatch = 0;
-my $bidsonly = 0;
-my $highbidders = undef;
+my $nowatch      = 0;
+my $bidsonly     = 0;
+my $highbidders  = undef;
+my $auctionsonly = undef;
 
 while( @ARGV ) {
   if( $ARGV[0] eq '--nowatch' ) {
@@ -22,6 +23,9 @@ while( @ARGV ) {
   } elsif( $ARGV[0] eq '--bidsonly' ) {
     shift @ARGV;
     $bidsonly = 1;
+  } elsif( $ARGV[0] eq '--auctionsonly' ) {
+    shift @ARGV;
+    $auctionsonly = 1;
   } elsif( $ARGV[0] eq '--highbidders' ) {
     shift @ARGV;
     $highbidders = 1;
@@ -30,22 +34,21 @@ while( @ARGV ) {
   }
 }
 
-my $result = $eBay->submitRequest( "GetMyeBaySelling",
-                                   {
-                                    ActiveList => {
-                                                   Sort => 'TimeLeft',
-                                                   Pagination => {
-                                                                  EntriesPerPage => 100,
-                                                                  PageNumber => 1
-                                                                 }
-                                                  }
-                                   }
-                                 );
+my $result = $eBay->submitPaginatedRequest( "GetMyeBaySelling",
+                                            {
+                                             ActiveList => {
+                                                            Sort => 'TimeLeft',
+                                                           }
+                                            },
+                                            'Item',
+                                            200,
+                                          );
 my $watching = 0;
 my $items = 0;
 my $things = 0;
 my $selling = 0;
 my $dollars = 0.0;
+my $potential = 0.0;
 my $disinterest = 0;
   
 if( ref $result ) {
@@ -65,6 +68,7 @@ if( ref $result ) {
     }
 
     next if $bidsonly && !$item->{SellingStatus}->{BidCount};
+    next if $auctionsonly && ($item->{ListingType} ne 'Chinese');
 
     print "$item->{ItemID} ";
     if( $nowatch ) {
@@ -74,12 +78,12 @@ if( ref $result ) {
     }
 
     $disinterest++ if !$item->{WatchCount} && !$item->{SellingStatus}->{BidCount};
-    
+
     $watching += $item->{WatchCount} || 0;
     my $bidcount = $item->{SellingStatus}->{BidCount};
     my $curprice = $item->{SellingStatus}->{CurrentPrice}->{content};
     my $q = $item->{Quantity};
-    
+
     print sprintf( "%2d ", $bidcount || 0 );
     print sprintf( "%7.2f ", $curprice );
 
@@ -98,7 +102,9 @@ if( ref $result ) {
       $selling++;
       $dollars += $q*$curprice;
     }
-    
+
+    $potential += $q*$curprice;
+
     $things += $q;
 
     if( defined $item->{QuantityAvailable} && $item->{QuantityAvailable} != $item->{Quantity} ) {
@@ -111,8 +117,10 @@ if( ref $result ) {
     $count++;
   }
 
+  $potential = int( $potential );
+
   if( !$nowatch ) {
-    print "$count listings, $things things, $selling will sell, \$$dollars, $watching watchers, $disinterest without interest\n";
+    print "Stats: $count listings, $things things, $selling will sell, \$$dollars, \$$potential potential, $watching watchers, $disinterest without interest\n";
   }
 } else {
   print STDERR "Unparsed result: \n$result\n\n";

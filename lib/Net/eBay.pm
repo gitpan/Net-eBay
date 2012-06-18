@@ -25,11 +25,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.55
+Version 0.60
 
 =cut
 
-our $VERSION = '0.55';
+our $VERSION = '0.60';
 
 =head1 SYNOPSIS
 
@@ -258,13 +258,19 @@ sub new {
           defined $hash->{SiteLevel} && $hash->{SiteLevel},
           "SiteLevel must be defined" 
       );
-      
+
       if( $hash->{SiteLevel} eq 'prod' ) {
+
         $hash->{url} = 'https://api.ebay.com/ws/api.dll';
         $hash->{public_url} = 'http://cgi.ebay.com/ws/eBayISAPI.dll';
+        $hash->{finding_url} = 'http://svcs.ebay.com/services/search/FindingService/v1';
+
       } elsif( $hash->{SiteLevel} eq 'dev' ) {
+
         $hash->{url} = 'https://api.sandbox.ebay.com/ws/api.dll';
         $hash->{public_url} = 'http://cgi.sandbox.ebay.com/ws/eBayISAPI.dll';
+        $hash->{finding_url} = undef; # incomplete work @@@@
+
       } else {
         return unless verifyAndPrint( 0, "Parameter SiteLevel is not defined or is wrong: '$hash->{SiteLevel}'" );
       }
@@ -331,7 +337,14 @@ sub setDefaults {
   $this->{defaults}->{timeout} = $defaults->{timeout} if defined $defaults->{timeout};
   $this->{defaults}->{retries} = $defaults->{retries}
     if defined $defaults->{retries};
-  #print STDERR "Compatibility set to 
+  #print STDERR "Compatibility set to
+
+  #
+  # I would not call this well done, but this is a statr for now.
+  #
+  $this->{FindingSiteID} = 'EBAY-US'    if $this->{siteid} == 0;
+  $this->{FindingSiteID} = 'EBAY-MOTOR' if $this->{siteid} == 100;
+
 }
 
 =head2 submitRequest
@@ -502,6 +515,140 @@ sub submitRequest {
   return $content;
 }
 
+sub submitPaginatedRequest {
+  my ($this, $name, $request, $arrayname, $perpage, $maxpages) = @_;
+
+  $arrayname = 'Item' unless $arrayname;
+  $perpage = 20       unless $perpage;
+
+  $request->{Pagination}->{EntriesPerPage} = $perpage;
+
+  my $result = $this->submitRequest( $name, $request );
+  {
+    # Arrayify
+    my $a = $result->{$arrayname . "Array"}->{$arrayname};
+    $a = [$a] unless ref $a eq 'ARRAY';
+    $result->{$arrayname . "Array"}->{$arrayname} = $a;
+  }
+
+  my $pagination = $result->{PaginationResult}
+    || $result->{ActiveList}->{PaginationResult};
+
+  #print STDERR Dumper( $result );
+  #print STDERR Dumper( $pagination );
+
+  if ( $pagination ) {
+
+    print STDERR "eBay.pm: Pagination is on!\n"
+      if $ENV{DEBUG_EBAY_PAGINATION};
+
+    my $npages = $pagination->{TotalNumberOfPages};
+
+    $npages = $maxpages if $maxpages && $npages > $maxpages;
+
+    for ( my $i = 2; $i <= $npages; $i++ ) {
+
+      print STDERR "Pagination: Getting page $i/$npages...\n"
+        if $ENV{DEBUG_EBAY_PAGINATION};
+
+      if ( $result->{ActiveList} ) {
+        $request->{ActiveList}->{Pagination}->{EntriesPerPage} = $perpage;
+        $request->{ActiveList}->{Pagination}->{PageNumber} = $i;
+      } else {
+        $request->{Pagination}->{PageNumber} = $i;
+      }
+
+      my $r = $this->submitRequest( $name, $request );
+      my $a = $r->{$arrayname . "Array"}->{$arrayname}
+        || $r->{ActiveList}->{$arrayname . "Array"}->{$arrayname};
+      $a = [$a] unless ref $a eq 'ARRAY';
+      #print STDERR "Array in page $i is " . Dumper( $a );
+
+      if ( $result->{ActiveList} ) {
+        push @{$result->{ActiveList}->{$arrayname . "Array"}->{$arrayname}}, @$a;
+      } else {
+        push @{$result->{$arrayname . "Array"}->{$arrayname}}, @$a;
+      }
+    }
+  }
+
+  delete $request->{Pagination};
+  return $result;
+}
+
+sub submitFindingRequestGetText {
+  my ($this, $name, $request) = @_;
+  my $req = HTTP::Request->new( POST => $this->{finding_url} );
+  $req->header( 'X-EBAY-SOA-SERVICE-VERSION', '1.0.0' );
+  $req->header( 'X-EBAY-SOA-SERVICE-NAME', 'FindingService' );
+  $req->header( 'X-EBAY-SOA-GLOBAL-ID', $this->{FindingSiteID} );
+  $req->header( 'X-EBAY-SOA-SECURITY-APPNAME', $this->{ApplicationKey} );
+  $req->header( 'X-EBAY-SOA-RESPONSE-DATA-FORMAT', 'XML' );
+
+  $req->header( 'X-EBAY-SOA-OPERATION-NAME', $name );
+
+  my $xml = "";
+
+  $xml .= "<$name xmlns=\"http://www.ebay.com/marketplace/search/v1/services\">\n";
+  $xml .= hash2xml( 2, $request ) . "\n";
+  $xml .= "</$name>\n";
+
+  $req->content( $xml );
+
+  #print STDERR $req->as_string;
+
+  my $timeout = $this->{defaults}->{timeout} || 50;
+  $_ua->timeout( $timeout );
+
+  my $retries = 0;
+  my $res;
+  TRY: {
+    $res = $_ua->request($req);
+    return undef unless $res;
+    if ( $res->is_error && $retries < $this->{defaults}{retries} ) {
+        $retries++;
+        redo TRY;
+    }
+  }
+
+  if ( $res->is_error() ) {
+    my $error_msg = $res->status_line();
+    warn "Net::eBay: error making request $name ($error_msg).\n";
+    return undef;
+  }
+  
+  if( $this->{debug} ) {
+    warn "Content (debug of Net::eBay): " . $res->content . "\n";
+  }
+
+  return $res->decoded_content;
+
+}
+
+sub submitFindingRequest {
+
+  my ($this) = @_;
+
+  my $content = submitFindingRequestGetText( @_ );
+
+  $this->{last_result_xml} = $content;
+
+  $@ = "";
+  my $result = undef;
+  eval {
+    $result = XMLin( $content );
+    #print "perl result=$result.\n";
+  };
+
+  $this->{_last_text} = $content;
+
+  return $result if $result;
+
+  warn "Error parsing XML ($@). REF(content) = " . ref( $content ) . " CONTENT=$content\n";
+  return $content;
+}
+
+
 =head2 officialTime
 
 Returns eBay official time
@@ -610,6 +757,7 @@ sub hash2xml {
         } else {
           my $data = hash2xml( $depth+2, $request->{$key}, $key );
           $xml .= "$d  <$key>$data</$key>\n";
+          #print STDERR $xml;
         }
       }
       $xml .= "$d";
