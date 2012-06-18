@@ -92,6 +92,9 @@ do {
   }
 } while( $done && @ARGV);
 
+my $requestName = 'findItemsAdvanced';
+$requestName = 'findCompletedItems' if defined $completed;
+
 my $query = join(" ", @ARGV );
 
 # use new eBay API
@@ -134,8 +137,7 @@ if( defined $distance && defined $zip ) {
 addItemFilter( $request, 'MinPrice', $minprice ) if $minprice;
 addItemFilter( $request, 'MaxPrice', $minprice ) if $maxprice;
 
-$request->{categoryID} = $category if(defined $category); 
-$request->{SearchType} = 'Completed' if(defined $completed); 
+$request->{categoryID} = $category if(defined $category);
 
 $request->{ItemTypeFilter} = 'AllItemTypes' if $all;
 
@@ -151,7 +153,7 @@ if( $currency ) {
 my $result;
 my $items;
 
-$result = $eBay->submitFindingRequest( "findItemsAdvanced", $request );
+$result = $eBay->submitPaginatedFindingRequest( $requestName, $request );
 
 print Dumper( $request ) if $detail;
 print Dumper( $result ) if $detail;

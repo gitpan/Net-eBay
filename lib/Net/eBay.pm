@@ -25,11 +25,11 @@ Net::eBay - Perl Interface to XML based eBay API.
 
 =head1 VERSION
 
-Version 0.60
+Version 0.61
 
 =cut
 
-our $VERSION = '0.60';
+our $VERSION = '0.61';
 
 =head1 SYNOPSIS
 
@@ -648,6 +648,57 @@ sub submitFindingRequest {
   return $content;
 }
 
+
+sub submitPaginatedFindingRequest {
+  my ($this, $name, $request, $arrayname, $perpage, $maxpages) = @_;
+
+  $arrayname = 'item' unless $arrayname;
+  $perpage = 100      unless $perpage;
+
+  $request->{paginationInput}->{entriesPerPage} = $perpage;
+
+  my $result = $this->submitFindingRequest( $name, $request );
+  {
+    # Arrayify
+    my $a = $result->{searchResult}->{$arrayname};
+    $a = [$a] unless ref $a eq 'ARRAY';
+    $result->{searchResult}->{$arrayname} = $a;
+  }
+
+  my $pagination = $result->{paginationOutput};
+
+  #print STDERR Dumper( $result );
+  #print STDERR Dumper( $pagination );
+
+  if ( $pagination ) {
+
+    print STDERR "eBay.pm: Pagination is on!\n"
+      if $ENV{DEBUG_EBAY_PAGINATION};
+
+    my $npages = $pagination->{totalPages};
+
+    $npages = $maxpages if $maxpages && $npages > $maxpages;
+    $npages = 100 if $npages > 100;
+
+    for ( my $i = 2; $i <= $npages; $i++ ) {
+
+      print STDERR "Pagination: Getting page $i/$npages...\n"
+        if $ENV{DEBUG_EBAY_PAGINATION};
+
+      $request->{paginationInput}->{pageNumber} = $i;
+
+      my $r = $this->submitFindingRequest( $name, $request );
+      my $a = $r->{searchResult}->{$arrayname};
+      $a = [$a] unless ref $a eq 'ARRAY';
+      #print STDERR "Array in page $i is " . Dumper( $a );
+
+      push @{$result->{searchResult}->{$arrayname}}, @$a;
+    }
+  }
+
+  delete $request->{Pagination};
+  return $result;
+}
 
 =head2 officialTime
 

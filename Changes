@@ -57,3 +57,4 @@ Revision history for Net-eBay
 0.54    Refined listing script to reflect a "no foreign sales" polify.
 0.55    Added ability to get complete XML of last response as $eBay->{last_result_xml}
 0.60    Added support for submitFindingRequest function to work with eBay finding API. In Progress
+0.61    added submitPaginatedFindingRequest with obvious functionality (takes all work out of pagination). 
